@@ -1,4 +1,6 @@
 import mongoose,{Schema} from "mongoose";
+import bcrypt from "bcrypt";
+
 
 const userSchema=new Schema({
     username:{
@@ -27,8 +29,13 @@ const userSchema=new Schema({
         default:false
     },
     verificationToken:{
-        type:String,
-        required:true,
+        type:Object,
+        token:{
+            type:String,           
+        },
+        expiry:{
+            type:Date,            
+        },
         select:false
     },
     role:{
@@ -40,6 +47,7 @@ const userSchema=new Schema({
         select:false
     },
     forgetPasswordToken:{
+        type:Object,
         token:{
             type:String
         },
@@ -50,9 +58,35 @@ const userSchema=new Schema({
     },
     purchasedCourses:[{
         type:String
-    }]
+    }],
+    createdAt:{
+        type: Date,
+        select:false
+    },
+    updatedAt:{
+        type:Date,
+        select:false
+    },
+    __v:{
+        type:Number,
+        select:false
+    }
 
-})
+}, {
+    timestamps:true,
+    
+} );
+
+
+userSchema.pre('save',async function(next){
+
+    if(this.isModified("password")){
+        this.password = await bcrypt.hash(this.password,10);
+    }
+
+    next();
+});
+
 
 const User = mongoose.model("User",userSchema);
 export default User
