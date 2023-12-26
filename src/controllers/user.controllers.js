@@ -4,7 +4,8 @@ import apiError from "../utils/apiError.js"
 import User from "../models/user.model.js";
 import { sendVerifyMail } from "../utils/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
-
+import crypto from "crypto";
+import { randomByteSize } from "../constants.js";
 
 
 
@@ -121,7 +122,45 @@ const emailVerificationToken = tryCatch(
 )
 
 
+const verifyUserAccount = tryCatch(
+    async(req,res)=>{
+        
+        const { token } = req.params;
+
+        // we know our token length =>go see at 2 * constants.js
+        if(!token || token.trim().length !==randomByteSize*2 ) apiError(400,"verification token not provided correctly, try again");
+
+        const hashedToken = crypto
+                            .createHash('sha256')
+                            .update(token)
+                            .digest('hex');
+        
+        
+        const user = await User.findOneAndUpdate(
+            {
+                'emailVerificationToken.token': hashedToken,
+                'emailVerificationToken.expiry': { $gt: Date.now() }
+            },{
+                verifiedStatus : true,
+                emailVerificationToken :null
+            }
+        )
+
+        if(!user) apiError(400,"invalid verification or expired token")
+
+        res.status(200).json(
+            new apiResponse("User account verified successfully")
+        )
+
+        return;
+
+
+
+    }
+)
+
 export {
     registerUser,
-    emailVerificationToken
+    emailVerificationToken,
+    verifyUserAccount
 }

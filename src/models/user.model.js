@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto"
-import { emailLimit, emailVerificationToken_expiry } from "../constants.js";
+import { emailLimit, emailVerificationToken_expiry, randomByteSize } from "../constants.js";
 
 const userSchema = new Schema({
     username: {
@@ -91,7 +91,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.generateVerificationToken = function (flag) {
-    const verificationToken = crypto.randomBytes(20).toString('hex');
+    const verificationToken = crypto.randomBytes(randomByteSize).toString('hex');
 
     this.emailVerificationToken.token = crypto
         .createHash('sha256')
