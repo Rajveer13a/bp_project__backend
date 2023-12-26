@@ -22,6 +22,6 @@ const instructorSchema = new Schema({
     }
 })
 
-const Instructor = mongoose.model("Instructor",userSchema);
+const Instructor = mongoose.model("Instructor",instructorSchema);
 
 export default Instructor;
