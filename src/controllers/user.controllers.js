@@ -7,7 +7,12 @@ import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
 import { randomByteSize } from "../constants.js";
 
-
+const cookieOptions = {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None'
+}
 
 const registerUser = tryCatch(
     async (req, res) => {
@@ -43,6 +48,11 @@ const registerUser = tryCatch(
 
         if (!user) apiError(400, "failed to create user account, try again later")
 
+        //setting access token
+        const jwtAccess = user.generateAccessToken();
+
+        res.cookie('session_token', jwtAccess, cookieOptions)
+
         res.status(200).json(
             new apiResponse(
                 "user account created , verify email to continue",
@@ -66,20 +76,12 @@ const registerUser = tryCatch(
 const emailVerificationToken = tryCatch(
     async (req, res) => {
 
-        const { email } = req.params;
-
-        if (email.trim() === "" || email === undefined) {
-            apiError(400, "email required");
-        }
-
-        const user = await User.findOne({ email }).select("+emailVerificationToken");
-
-        if (!user) apiError(400, "user does not exist");
+        const user = req.user; ///comes from auth middleware
 
         if (user.verifiedStatus === true) apiError(400, "user already verified");
 
         const tokenexpiry = user?.emailVerificationToken?.expiry;
-
+  
         // when token is already created
         if (Date.now() <= tokenexpiry) {   //token exist & ! expired 
 
@@ -87,7 +89,7 @@ const emailVerificationToken = tryCatch(
 
                 apiError(
                     400,
-                    `verifiaction mail send to ${email}, if u still can't find it please try after ${tokenexpiry} `
+                    `verifiaction mail send to ${user.email}, if u still can't find it please try after ${tokenexpiry} `
                 )
             };
             //if ratelimit not exceeds
@@ -97,10 +99,8 @@ const emailVerificationToken = tryCatch(
 
             await user.save();
 
-
-
             res.status(200).json(
-                new apiResponse(`verification code send to ${email} `)
+                new apiResponse(`verification code send to ${user.email} `)
             )
             return;
         };
@@ -113,7 +113,7 @@ const emailVerificationToken = tryCatch(
         await sendVerifyMail(user.email, verificationToken);
 
         res.status(200).json(
-            new apiResponse(`verification mail send successfully to ${email}`)
+            new apiResponse(`verification mail send successfully to ${user.email}`)
         )
 
         return;
@@ -123,30 +123,41 @@ const emailVerificationToken = tryCatch(
 
 
 const verifyUserAccount = tryCatch(
-    async(req,res)=>{
-        
-        const { token } = req.params;
+    async (req, res) => {
 
-        // we know our token length =>go see at 2 * constants.js
-        if(!token || token.trim().length !==randomByteSize*2 ) apiError(400,"verification token not provided correctly, try again");
+        let user = req.user
+
+        if (user.verifiedStatus === true) apiError(400, "user already verified");
+
+        const { token } = req.body;
+
+        // we know our token length is 6
+        if (!token || token.trim().length !== 6) apiError(400, "verification token not provided correctly, try again");
 
         const hashedToken = crypto
-                            .createHash('sha256')
-                            .update(token)
-                            .digest('hex');
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
         
         
-        const user = await User.findOneAndUpdate(
-            {
-                'emailVerificationToken.token': hashedToken,
-                'emailVerificationToken.expiry': { $gt: Date.now() }
-            },{
-                verifiedStatus : true,
-                emailVerificationToken :null
-            }
-        )
+        if ( //token does not match or is expired
+            user.emailVerificationToken.token !== hashedToken ||
+            user.emailVerificationToken.expiry < Date.now()
 
-        if(!user) apiError(400,"invalid verification or expired token")
+        ) {
+            apiError(400, "invalid verification token or expired token")
+
+        }
+
+        user.verifiedStatus = true;
+
+        user.emailVerificationToken = null;
+
+        user = await user.save();
+
+        const jwtAccess = user.generateAccessToken();
+        res.cookie('session_token', jwtAccess, cookieOptions);
+
 
         res.status(200).json(
             new apiResponse("User account verified successfully")
@@ -158,6 +169,8 @@ const verifyUserAccount = tryCatch(
 
     }
 )
+
+
 
 export {
     registerUser,

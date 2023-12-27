@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto"
 import { emailLimit, emailVerificationToken_expiry, randomByteSize } from "../constants.js";
+import jwt from "jsonwebtoken";
 
 const userSchema = new Schema({
     username: {
@@ -36,9 +37,9 @@ const userSchema = new Schema({
         expiry: {
             type: Date,
         },
-        emailLimit:{
-            type:Number,
-            default:emailLimit
+        emailLimit: {
+            type: Number,
+            default: emailLimit
         }
     },
     role: {
@@ -91,24 +92,66 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.generateVerificationToken = function (flag) {
-    const verificationToken = crypto.randomBytes(randomByteSize).toString('hex');
+ 
+    let verificationToken = Math.floor(Math.random() * 900000) + 100000;
+    verificationToken = verificationToken.toString(); //6 digit otp
 
     this.emailVerificationToken.token = crypto
         .createHash('sha256')
         .update(verificationToken)
         .digest('hex');
 
-    if(flag){ //is flag is true set  new date and reset email limit
-        this.emailVerificationToken.expiry = emailVerificationToken_expiry
-        this.emailVerificationToken.emailLimit = emailLimit-1 ;
-    }else{
-        this.emailVerificationToken.emailLimit = this.emailVerificationToken.emailLimit-1  ;
+    if (flag) { //is flag is true set  new date and reset email limit
+        this.emailVerificationToken.expiry = Date.now() + emailVerificationToken_expiry;
+        this.emailVerificationToken.emailLimit = emailLimit - 1;
+    } else {
+        this.emailVerificationToken.emailLimit = this.emailVerificationToken.emailLimit - 1;
     }
-    
+
 
     return verificationToken;
 };
 
+
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+            username: this.username,
+            email: this.email,
+            verifiedStatus: this.verifiedStatus,
+            role: this.role,
+            purchasedCourses: this.purchasedCourses
+        },
+
+        process.env.ACCESS_TOKEN_SECRET,
+
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+
+    )
+}
+
+userSchema.methods.generateRefreshToken = function () {
+    return jwt.sign(
+        {
+            _id: this._id,
+            username: this.username,
+            email: this.email,
+            verifiedStatus: this.verifiedStatus,
+            role: this.role,
+            purchasedCourses: this.purchasedCourses
+        },
+
+        process.env.REFRESH_TOKEN_SECRET,
+
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+
+    )
+}
 
 const User = mongoose.model("User", userSchema);
 export default User
