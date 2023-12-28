@@ -12,7 +12,7 @@ const isLoggedIn= (flag=true)=>tryCatch(
 
         if(!session_token) apiError(400,"unauthenticated please login");
 
-        const decoded_token = jwt.verify(session_token, process.env.ACCESS_TOKEN_SECRET);
+        const decoded_token = jwt.verify(session_token, process.env.JWT_TOKEN_SECRET);
 
         const user = await User.findById(decoded_token?._id);
 

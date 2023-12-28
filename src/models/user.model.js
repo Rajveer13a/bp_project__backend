@@ -124,7 +124,7 @@ userSchema.methods.generateAccessToken = function () {
             purchasedCourses: this.purchasedCourses
         },
 
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.JWT_TOKEN_SECRET,
 
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
@@ -144,13 +144,18 @@ userSchema.methods.generateRefreshToken = function () {
             purchasedCourses: this.purchasedCourses
         },
 
-        process.env.REFRESH_TOKEN_SECRET,
+        process.env.JWT_TOKEN_SECRET,
 
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
 
     )
+}
+
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+    return await bcrypt.compare(password,this.password);
 }
 
 const User = mongoose.model("User", userSchema);

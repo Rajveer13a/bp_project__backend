@@ -8,11 +8,12 @@ import crypto from "crypto";
 import { randomByteSize } from "../constants.js";
 
 const cookieOptions = {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: true,
     sameSite: 'None'
 }
+
+//___________________________________
 
 const registerUser = tryCatch(
     async (req, res) => {
@@ -71,7 +72,7 @@ const registerUser = tryCatch(
     }
 );
 
-
+//___________________________________
 
 const emailVerificationToken = tryCatch(
     async (req, res) => {
@@ -121,6 +122,7 @@ const emailVerificationToken = tryCatch(
     }
 )
 
+//___________________________________
 
 const verifyUserAccount = tryCatch(
     async (req, res) => {
@@ -151,7 +153,7 @@ const verifyUserAccount = tryCatch(
 
         user.verifiedStatus = true;
 
-        user.emailVerificationToken = null;
+        user.emailVerificationToken = undefined;
 
         user = await user.save();
 
@@ -170,10 +172,101 @@ const verifyUserAccount = tryCatch(
     }
 )
 
+//___________________________________
+
+const loginUser = tryCatch(
+    async (req,res)=>{
+
+        const { email, password } = req.body;
+
+        if([ email, password ].some((value)=>value?.trim()==="" || value==undefined ) ){
+            apiError(400,"username and password both required")
+        };
+
+        let user = await User.findOne({email}).select( '+password' );
+
+        if(!user) apiError("incorrect username or password");
+
+        const isValidPass = await user.isPasswordCorrect(password);
+
+        if( !isValidPass ) apiError(400,"incorrect username or password");
+
+        const jwtAccess = user.generateAccessToken();
+
+        const jwtRefresh = user.generateRefreshToken();
+
+        user = await User.findByIdAndUpdate(
+            user._id,
+            {
+                $set:{
+                    refreshToken:jwtRefresh
+                }
+            },
+            {
+                new:true
+            }
+        ).select( '-emailVerificationToken' );
+
+        res.cookie( 'session_token', jwtAccess, cookieOptions );
+
+        res.cookie( 'refresh_token', jwtRefresh, cookieOptions );
+
+        res.status(200).json(
+            new apiResponse("user logged in succesfully", user)
+        );
+        
+        return;
+        
+
+
+
+    }
+)
+
+//___________________________________
+
+const getProfile = tryCatch(
+    async (req, res)=>{
+        const user = req.user.toObject()
+        
+        delete user.emailVerificationToken;
+
+        res.status(200).json(
+            new apiResponse("user data fetched",user)
+        )
+    }
+)
+
+//___________________________________
+
+const logoutUser = tryCatch(
+    async (req, res)=>{
+
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $unset:{
+                    refreshToken:1
+                }
+            }
+        );
+
+        res.status(200)
+            .clearCookie("session_token",cookieOptions)
+            .clearCookie("refresh_token",cookieOptions)
+            .json(
+                new apiResponse("logged out succesfully")
+            )
+    }
+)
+
 
 
 export {
     registerUser,
     emailVerificationToken,
-    verifyUserAccount
+    verifyUserAccount,
+    loginUser,
+    getProfile,
+    logoutUser
 }
