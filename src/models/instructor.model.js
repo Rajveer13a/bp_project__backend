@@ -11,14 +11,6 @@ const instructorSchema = new Schema({
         minlength:[20,"bio should be of at least 20 words"],
         maxlength:[100,"bio should be less than 100 words "],
         trim:true
-    },
-    profileImage:{
-        public_id:{
-            type:String
-        },
-        secure_url:{
-            type:String
-        }
     }
 })
 

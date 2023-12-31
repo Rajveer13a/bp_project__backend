@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto"
-import { emailLimit, emailVerificationToken_expiry, randomByteSize } from "../constants.js";
+import { emailLimit, emailVerificationToken_expiry, forgotPassword_emailLimit, forgotPassword_expiry, randomByteSize } from "../constants.js";
 import jwt from "jsonwebtoken";
 
 const userSchema = new Schema({
@@ -39,7 +39,7 @@ const userSchema = new Schema({
         },
         emailLimit: {
             type: Number,
-            default: emailLimit
+            // default: emailLimit
         }
     },
     role: {
@@ -50,15 +50,17 @@ const userSchema = new Schema({
         type: String,
         select: false
     },
-    forgetPasswordToken: {
-        type: Object,
+    forgotPasswordToken: {
+
         token: {
             type: String
         },
         expiry: {
             type: Date
         },
-        select: false
+        emailLimit:{
+            type:Number
+        }
     },
     purchasedCourses: [{
         type: String,
@@ -74,6 +76,14 @@ const userSchema = new Schema({
     __v: {
         type: Number,
         select: false
+    },
+    profileImage:{
+        public_id:{
+            type:String
+        },
+        secure_url:{
+            type:String
+        }
     }
 
 }, {
@@ -156,6 +166,28 @@ userSchema.methods.generateRefreshToken = function () {
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password,this.password);
+}
+
+userSchema.methods.generateForgotPasswordToken =function (flag){
+
+    const createdPasswordToken = crypto.randomBytes(randomByteSize).toString('hex');
+
+    this.forgotPasswordToken.token = crypto
+                                    .createHash('sha256')
+                                    .update(createdPasswordToken)
+                                    .digest('hex');
+    
+    if(flag){
+        this.forgotPasswordToken.expiry = Date.now() + forgotPassword_expiry;
+        this.forgotPasswordToken.emailLimit = forgotPassword_emailLimit-1;
+    }else{
+        this.forgotPasswordToken.emailLimit = this.forgotPasswordToken.emailLimit-1;
+    }
+
+    return createdPasswordToken;
+
+
+    
 }
 
 const User = mongoose.model("User", userSchema);
