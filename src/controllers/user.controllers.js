@@ -329,14 +329,19 @@ const changePassword = tryCatch(
 
         user.password = newPassword;
 
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+
         await user.save();
+
+        res.cookie("refresh_token", refreshToken, cookieOptions);
 
         res.status(200).json(
             new apiResponse("password changed successfully")
         )
 
-
-
+        return;
 
     }
 )
