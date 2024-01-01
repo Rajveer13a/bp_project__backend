@@ -458,7 +458,11 @@ const updateUserAvatarImage = tryCatch(
         const avatarLocalPath = req.file?.path;
 
         if(!avatarLocalPath) apiError(400,"avatar file is missing");
-  
+                       
+        const avatar = await uploadCloudinary(avatarLocalPath,"image");
+
+        if(!avatar) apiError(400,"failed to upload avatar");
+
         if(user.profileImage.public_id ){//if avatar already present 
          
             const res=await cloudinary.uploader.destroy(
@@ -467,10 +471,6 @@ const updateUserAvatarImage = tryCatch(
 
             if(res.result==="not found") apiError(400,"failed to delete previous image")
         }
-        
-        const avatar = await uploadCloudinary(avatarLocalPath,"image");
-
-        if(!avatar) apiError(400,"failed to upload avatar");
 
         user = await User.findByIdAndUpdate(
             user._id,
