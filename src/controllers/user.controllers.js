@@ -502,7 +502,7 @@ const updateUserDetails = tryCatch(
     async(req, res)=>{
         const {username} = req.body;
 
-        if(!username) apiError(400,"username not provided");
+        if(username?.trim()==="" || username===undefined) apiError(400,"username not provided");
 
         if(username ===req.user.username){
             apiError(400,"provide different username than previously used");
