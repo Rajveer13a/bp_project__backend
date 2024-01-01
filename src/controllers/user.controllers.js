@@ -364,7 +364,7 @@ const forgotPassword = tryCatch(
         const forgotPasswordToken = user.forgotPasswordToken;
 
         if( forgotPasswordToken?.expiry > Date.now() ){
-            console.log("inside")
+            
             const{expiry, token, emailLimit} = forgotPasswordToken;
 
             if(emailLimit===0){//rate limit exceeds
@@ -376,7 +376,7 @@ const forgotPassword = tryCatch(
             //rate limit not exceeds
             const ForgotPasswordToken = user.generateForgotPasswordToken(false);
 
-            await sendForgotPasswordMail(email,forgotPasswordToken);
+            await sendForgotPasswordMail(email,forgotPasswordToken.token);
 
             await user.save();
 
