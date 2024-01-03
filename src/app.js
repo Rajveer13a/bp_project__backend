@@ -21,10 +21,23 @@ import userRouter from "./routes/user.routes.js";
 
 app.use("/api/v1/user",userRouter);
 
+//----------------------------------
+
+import instructorRouter from "./routes/instructor.routes.js";
+
+app.use("/api/v1/instructor", instructorRouter);
+
+
+
+//----------------------------------
 app.get("/ping",(req,res)=>{
     res.send("Pong from server")
 } )
 
-app.use(errorHandler)
+app.all('*',(req,res)=>{
+    res.status(404).send("invalid path")
+});
+
+app.use(errorHandler);
 
 export default app;

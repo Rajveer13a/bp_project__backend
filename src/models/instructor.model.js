@@ -11,8 +11,20 @@ const instructorSchema = new Schema({
         minlength:[20,"bio should be of at least 20 words"],
         maxlength:[100,"bio should be less than 100 words "],
         trim:true
+    },createdAt: {
+        type: Date,
+        select: false
+    },
+    updatedAt: {
+        type: Date,
+        select: false
+    },
+    __v:{
+        type:Number,
+        select:false
     }
-})
+},
+{timestamps:true})
 
 const Instructor = mongoose.model("Instructor",instructorSchema);
 

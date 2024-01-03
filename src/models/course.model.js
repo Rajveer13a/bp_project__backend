@@ -5,6 +5,10 @@ const courseSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:"Instructor"
     },
+    title:{
+        type:String,
+        required:true
+    },
     thumbnail:{
         public_id:{
             type:String
