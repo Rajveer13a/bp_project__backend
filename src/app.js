@@ -2,6 +2,9 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler.js";
+
+//--------------------------------------------------
+
 const app = express();
 
 app.use(cors({
@@ -27,7 +30,11 @@ import instructorRouter from "./routes/instructor.routes.js";
 
 app.use("/api/v1/instructor", instructorRouter);
 
+//-------------------------------------
 
+import courseRouter from "./routes/course.routes.js";
+
+app.use("/api/v1/course",courseRouter);
 
 //----------------------------------
 app.get("/ping",(req,res)=>{

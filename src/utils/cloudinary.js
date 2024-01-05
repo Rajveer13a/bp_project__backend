@@ -9,7 +9,7 @@ cloudinary.config({
 });
 
 
-async function uploadCloudinary(localFilePath,type){
+async function uploadCloudinary(localFilePath,type,imgConfig){
     
     try {
         if(!localFilePath) return null;
@@ -17,22 +17,27 @@ async function uploadCloudinary(localFilePath,type){
         if(type==="image"){
             response = await cloudinary.uploader.upload(
                 localFilePath,
-                {
-                    resource_type:"image",
-                    folder: 'udemy',
-                    width: 250,
-                    height: 250,
-                    gravity: 'faces',
-                    crop: 'fill'
-                }
+                imgConfig
             );
             
+        }else if(type==="video"){
+            response = await cloudinary.uploader.upload(
+                localFilePath,
+                {
+                    resource_type:"video",
+                    folder: 'udemy/lecture/videos',
+                }
+            );
+
         }else{
             response = await cloudinary.uploader.upload(
                 localFilePath,
-                {resource_type:"video"}
+                {
+                    resource_type:"raw",
+                    folder: 'udemy/lecture/files'
+                },
+                
             );
-
         }
 
         fs.unlinkSync(localFilePath);
@@ -40,7 +45,7 @@ async function uploadCloudinary(localFilePath,type){
         return response;
 
     } catch (error) {
-        console.log(error)
+        console.log(error);
         fs.unlinkSync(localFilePath);
 
         return null ;

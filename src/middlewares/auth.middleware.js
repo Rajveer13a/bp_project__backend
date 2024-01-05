@@ -1,3 +1,4 @@
+import Instructor from "../models/instructor.model.js";
 import User from "../models/user.model.js";
 import apiError from "../utils/apiError.js";
 import tryCatch from "../utils/tryCatch.js";
@@ -30,7 +31,31 @@ const isLoggedIn= (flag=true)=>tryCatch(
 
 )
 
+const authorizedroles = (...roles)=>tryCatch(
+    async (req,res,next)=>{
+        const user = req.user;
+
+        const currentRole = user.role;
+        
+        if(! roles.includes(currentRole)){
+            apiError(400,"uanuthorized user , dont have permission");
+        }
+
+        if(currentRole === "INSTRUCTOR"){
+            const instructor = await Instructor.findOne({
+                user_id: user._id
+            });
+    
+            if(!instructor) apiError(400,"instuctor not found");
+
+            req.instructor = instructor;
+        };
+
+        next();
+    }
+);
 
 export {
-    isLoggedIn
+    isLoggedIn,
+    authorizedroles
 }
