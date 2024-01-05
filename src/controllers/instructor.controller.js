@@ -76,13 +76,14 @@ const getInstructorDetails =tryCatch(
             {
                 $project:{
                     "courses.instructor_id": 0,
+                    "courses.__v": 0,
                     "__v": 0,
                     "user_id":0
                 }
             }
         ]);
 
-        if(!instructor) apiError(400,"instuctor not found");
+        if(!instructor[0]) apiError(400,"instuctor not found");
 
         user = user.toObject();
 
