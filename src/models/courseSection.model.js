@@ -6,12 +6,28 @@ const sectionSchema = new Schema({
         require:true,
         trim:true
     },
-    lectures:[{
+    course_id:{
         type:Schema.Types.ObjectId,
-        ref:"Lecture"
-    }]
+        require:true
+    },
+    instructor_id:{
+        type:Schema.Types.ObjectId,
+        require:true
+    },
+    __v:{
+        type:Number,
+        select:false
+    },
+    createdAt:{
+        type:Date,
+        select:false
+    },
+    updatedAt:{
+        type:Date,
+        select:false
+    }
     
-});
+},{timestamps:true});
 
 const Section =  mongoose.model("Section",sectionSchema);
 

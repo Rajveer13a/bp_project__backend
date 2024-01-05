@@ -7,16 +7,20 @@ const courseSchema = new Schema({
     },
     title:{
         type:String,
-        required:true
+        required:true,
+        minlength:[10,"title needs to be more than 10 words"],
+        maxlength:[30,"title needs to be less than 10 words"]
     },
     thumbnail:{
         public_id:{
-            type:String
+            type:String,
+            required:true
         },
         secure_url:{
-            type:String
+            type:String,
+            required:true
         },
-        required:true
+        
     },
     price:{
         type:Number,
@@ -35,7 +39,20 @@ const courseSchema = new Schema({
     sections:[{
         type:Schema.Types.ObjectId,
         ref:"Section"
-    }]
+    }],
+    createdAt: {
+        type: Date,
+        select: false
+    },
+    updatedAt: {
+        type: Date,
+        select: false
+    },
+    __v: {
+        type: Number,
+        select: false
+    },
+    
 });
 
 const Course = mongoose.model("Course",courseSchema);

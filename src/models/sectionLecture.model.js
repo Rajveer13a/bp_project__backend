@@ -8,7 +8,23 @@ const lectureSchema = new Schema({
         minlength:[14,"title should be greater than 14 words"],
         maxlength:[30,"title should be less than 30 words"],
     },
-    video:{
+    instructor_id:{
+        type:Schema.Types.ObjectId,
+        require:true
+    },
+    section_id:{
+        type:Schema.Types.ObjectId,
+        require:true
+    },
+    type:{
+        type:String
+    },
+    description:{
+        type:String,
+        minlength:[10,"description should be greater than 14 words"],
+        maxlength:[30,"description should be less than 30 words"],
+    },
+    resource:{
         public_id:{
             type:String
         },
@@ -19,6 +35,10 @@ const lectureSchema = new Schema({
     approved:{
         type:Boolean,
         default:false 
+    },
+    __v:{
+        type:Number,
+        required:false
     }
 });
 
