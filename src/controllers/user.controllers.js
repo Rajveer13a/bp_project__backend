@@ -5,7 +5,7 @@ import User from "../models/user.model.js";
 import { sendForgotPasswordMail, sendVerifyMail } from "../utils/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
-import { randomByteSize } from "../constants.js";
+import { profileImgConfig, randomByteSize } from "../constants.js";
 import jwt from "jsonwebtoken";
 import { type } from "os";
 import { log } from "console";
@@ -209,7 +209,7 @@ const loginUser = tryCatch(
             {
                 new: true
             }
-        ).select('-emailVerificationToken');
+        ).select('-emailVerificationToken -forgotPasswordToken');
 
         res.cookie('session_token', jwtAccess, cookieOptions);
 
@@ -464,7 +464,7 @@ const updateUserAvatarImage = tryCatch(
 
         if(!avatarLocalPath) apiError(400,"avatar file is missing");
                        
-        const avatar = await uploadCloudinary(avatarLocalPath,"image");
+        const avatar = await uploadCloudinary(avatarLocalPath,"image",profileImgConfig);
 
         if(!avatar) apiError(400,"failed to upload avatar");
 
