@@ -391,6 +391,150 @@ const updateCourseDetails = tryCatch(
     }
 )
 
+//-------------------------------------
+
+const deleteLecture = tryCatch(
+    async( req, res )=>{
+
+        const { lecture_id } =  req.params;
+
+        if( lecture_id===undefined || lecture_id.trim()==="" ){
+            apiError(400,"lecture id not given");
+        };
+
+        const lecture = await Lecture.findOne(
+            {
+                instructor_id: req.instructor._id,
+                _id: lecture_id
+            }
+        );
+
+        if( !lecture ) apiError(400,"lecture not found");
+
+        if(lecture.resource?.public_id){//deleting lecture resource
+            
+            const { public_id } = lecture.resource;
+            
+            const dest = await cloudinary.uploader.destroy(
+                public_id,
+                { resource_type : lecture.type }
+
+            );
+
+            if(dest.result ==="not found") apiError(400,"failed to destroy");
+        }
+
+        const deletingLecture = await Lecture.findByIdAndDelete(
+            lecture._id
+        );
+
+        if( ! deleteLecture ) apiError(400," failed to delete lecture");
+
+        res.status(200).json(
+            new apiResponse("lecture deleted successfully")
+        );
+
+        return;
+
+        
+
+    }
+);
+
+//-------------------------------------
+
+const deleteSection = tryCatch(
+    async(req, res)=>{
+
+        const {section_id} = req.params;
+
+        if( !section_id || section_id.trim()==="" ) apiError(400, "section id is not given");
+
+        const section = await Section.findOne(
+            {
+                instructor_id: req.instructor._id,
+                _id: section_id
+            }
+        );
+
+        if( !section ) apiError(400," section not found");
+
+        const lecture = await Lecture.find(
+            {
+                section_id: section._id
+            }
+        );
+
+        if( lecture.length !==0 ){
+            apiError(400,"first delete all lectures of the section")
+        };
+
+        const deletingSection = await Section.findByIdAndDelete(
+            section._id
+        )
+
+        if( ! deletingSection){
+            apiError(400,"failed to delete lecture");
+        };
+
+        res.status(200).json(
+            new apiResponse("section deleted successfully")
+        )
+
+        return;
+
+    }
+)
+
+const deleteCourse = tryCatch(
+    async (req, res)=>{
+        const {course_id} = req.params;
+
+        if( !course_id || course_id.trim()==="" ) apiError(400, "course id is not given");
+
+        const course = await Course.findOne(
+            {
+                instructor_id: req.instructor._id,
+                _id: course_id
+            }
+        );
+
+        if( !course ) apiError(400," course not found");
+
+        const section = await Section.find(
+            {
+                course_id: course._id
+            }
+        );
+
+        if( section.length !==0 ){
+            apiError(400,"first delete all section of the course")
+        };
+
+        //deleting thumbnail of the course
+
+        const delThumbnial = await cloudinary.uploader.destroy(
+            course.thumbnail.public_id,
+            { resource_type : "image" }
+        );
+
+        if(delThumbnial.result ==="not found") apiError(400,"failed to destroy");
+
+        const deletingCourse = await Course.findByIdAndDelete(
+            course._id
+        )
+
+        if( ! deletingCourse){
+            apiError(400,"failed to delete course");
+        };
+
+        res.status(200).json(
+            new apiResponse("course deleted successfully")
+        )
+
+        return;
+    }
+)
 
 //-------------------------------------
 export{
@@ -401,5 +545,8 @@ export{
     addfileTOLecture,
     updateLectureTitle,
     updateSecitonTitle,
-    updateCourseDetails
+    updateCourseDetails,
+    deleteLecture,
+    deleteSection,
+    deleteCourse
 };
