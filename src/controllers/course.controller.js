@@ -7,6 +7,7 @@ import { cloudinary, uploadCloudinary } from "../utils/cloudinary.js";
 import { thumbnailImgConfig } from "../constants.js";
 import Section from "../models/courseSection.model.js";
 import Lecture from "../models/sectionLecture.model.js";
+import mongoose from "mongoose";
 
 async function addNewResourceToLecture(req,type){
     const instructor = req.instructor;
@@ -537,6 +538,90 @@ const deleteCourse = tryCatch(
 )
 
 //-------------------------------------
+
+const getCourseDetail = tryCatch(
+    async (req, res)=>{
+
+        const { course_id } = req.params;
+
+        if( course_id === undefined || course_id.trim()==" " ){
+            apiError(400,"course id not provided");
+        };
+
+        const course = await Course.aggregate([
+            {
+              $match: {
+                instructor_id: req.instructor._id,
+                _id: new mongoose.Types.ObjectId(course_id)
+              }
+            },
+            {
+              $lookup: {
+                from: "sections",
+                localField: "_id",
+                foreignField: "course_id",
+                as: "sections",
+                pipeline: [
+                  {
+                    $sort: {
+                      createdAt: 1 
+                    }
+                  },
+                  {
+                    $lookup: {
+                      from: "lectures",
+                      localField: "_id",
+                      foreignField: "section_id",
+                      as: "lectures",
+                      pipeline: [
+                        {
+                          $sort: {
+                            createdAt: 1 
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    $project:{
+                        lectures : {
+                            section_id : 0,
+                            createdAt : 0,
+                            updatedAt : 0,
+                            __v : 0,
+                            instructor_id : 0
+                        }
+                    }
+                  }
+                  
+                ]
+              }
+            },
+            {
+                $project:{
+                    __v : 0,
+                    sections : {
+                        __v : 0,
+                        createdAt : 0,
+                        updatedAt : 0,
+                        course_id : 0,
+                        instructor_id : 0
+                    }
+
+                }
+            }
+          ]);
+          
+
+        if( course.length === 0 ) apiError(400,"course not found");
+
+        res.status(200).json(
+            new apiResponse("course data fetched successfully", course)
+        )
+    }
+)
+
+//-------------------------------------
 export{
     createCourse,
     createSection,
@@ -548,5 +633,6 @@ export{
     updateCourseDetails,
     deleteLecture,
     deleteSection,
-    deleteCourse
+    deleteCourse,
+    getCourseDetail
 };

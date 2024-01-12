@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {addLecturetitle, addVideoToLecture, addfileTOLecture, createCourse, createSection,  deleteCourse,  deleteLecture,  deleteSection,  updateCourseDetails,  updateLectureTitle, updateSecitonTitle } from "../controllers/course.controller.js";
+import {addLecturetitle, addVideoToLecture, addfileTOLecture, createCourse, createSection,  deleteCourse,  deleteLecture,  deleteSection,  getCourseDetail,  updateCourseDetails,  updateLectureTitle, updateSecitonTitle } from "../controllers/course.controller.js";
 import { authorizedroles, isLoggedIn } from "../middlewares/auth.middleware.js";
 import multerfunc from "../middlewares/multer.middleware.js";
 import { fileExtn, fileSize, imageExtn, imageSize, videoExtn, videoSize } from "../constants.js";
@@ -73,6 +73,12 @@ router.delete('/delete/course/:course_id',
     isLoggedIn(),
     authorizedroles('INSTRUCTOR'),
     deleteCourse
+)
+
+router.get('/detail/:course_id',
+    isLoggedIn(),
+    authorizedroles('INSTRUCTOR'),
+    getCourseDetail
 )
 
 //-------------------------------------
