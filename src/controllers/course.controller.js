@@ -616,7 +616,7 @@ const getCourseDetail = tryCatch(
         if( course.length === 0 ) apiError(400,"course not found");
 
         res.status(200).json(
-            new apiResponse("course data fetched successfully", course)
+            new apiResponse("course data fetched successfully", course[0])
         )
     }
 )

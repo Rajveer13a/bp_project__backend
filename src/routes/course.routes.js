@@ -14,73 +14,43 @@ const fileMulter = multerfunc(fileSize, fileExtn);
 
 const router = Router();
 
-router.post('/create',isLoggedIn(),authorizedroles("INSTRUCTOR"),imageMulter.single('thumbnail'),createCourse);
+//-------------------------------------
 
-router.post('/create/section/:course_id',isLoggedIn(),authorizedroles("INSTRUCTOR"),createSection);
+router.all("/*", isLoggedIn(), authorizedroles("INSTRUCTOR"))
 
-router.post('/add/lecture/:given_course_id/:given_section_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
+router.post('/',imageMulter.single('thumbnail'),createCourse);
+
+router.post('/section/:course_id',createSection);
+
+router.post('/lecture/:given_course_id/:given_section_id',
     addLecturetitle
 );
 
-router.post('/add/lectureVideo/:lecture_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
+router.post('/lectureVideo/:lecture_id',
     videoMulter.single("lectureVideo"),
     addVideoToLecture
 );
 
-router.post('/add/lectureFile/:lecture_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
+router.post('/lectureFile/:lecture_id',
     fileMulter.single("lectureResource"),
     addfileTOLecture
 );
 
-router.patch('/update/lecture/:lecture_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    updateLectureTitle
-);
 
-router.patch('/update/section/:section_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    updateSecitonTitle
-);
+router.route('/lecture/:lecture_id')
+        .patch( updateLectureTitle )
+        .delete( deleteLecture )
 
-router.patch('/update/course/:course_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    imageMulter.single('thumbnail'),
-    updateCourseDetails
-);
 
-router.delete('/delete/lecture/:lecture_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    deleteLecture
-)
+router.route('/section/:section_id')
+        .patch( updateSecitonTitle )
+        .delete( deleteSection );
 
-router.delete('/delete/section/:section_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    deleteSection
-)
 
-router.delete('/delete/course/:course_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    deleteCourse
-)
-
-router.get('/detail/:course_id',
-    isLoggedIn(),
-    authorizedroles('INSTRUCTOR'),
-    getCourseDetail
-)
-
+router.route('/:course_id')
+        .get( getCourseDetail )
+        .patch( imageMulter.single('thumbnail'), updateCourseDetails )
+        .delete( deleteCourse );
 //-------------------------------------
 
 export default router;
