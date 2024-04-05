@@ -8,6 +8,7 @@ import { thumbnailImgConfig } from "../constants.js";
 import Section from "../models/courseSection.model.js";
 import Lecture from "../models/sectionLecture.model.js";
 import mongoose from "mongoose";
+import Review from "../models/courseReview.model.js";
 
 async function addNewResourceToLecture(req,type){
     const instructor = req.instructor;
@@ -622,6 +623,88 @@ const getCourseDetail = tryCatch(
 )
 
 //-------------------------------------
+
+const submitForApproval =tryCatch(
+    async(req,res)=>{
+
+        const instructor = req.instructor;
+
+        const { course_id } = req.body;
+
+        if( course_id === undefined || course_id.trim() ===""){
+            apiError(400,"course_id not given");
+        };
+
+        const course = await Course.findOne(
+            {
+                _id: course_id,
+                instructor_id: instructor._id
+            }
+        );
+
+        if(!course) apiError(400,"course not found");
+                
+        const approval = await Review.create(
+            {
+                course_id: course._id,
+                instructorName: req.user.username
+            }
+        );
+
+        if(  !approval ) apiError(
+            400, "failed to submit for approval"
+        );
+
+        res.status(200).json(
+            new apiResponse("submitted for approval")
+        );
+
+        
+
+    }
+);
+
+
+const approvalStatus = tryCatch(
+    async(req, res)=>{
+        
+        const { course_id } = req.body;
+        
+        if( course_id === undefined || course_id.trim() === "" ){
+            apiError(400,"course id not given");
+        };
+
+        const course = await Course.findOne({
+            _id: course_id,
+            instructor_id: new mongoose.Types.ObjectId(req.instructor._id)
+        });
+
+        if(!course) apiError(400, "course not found");
+
+        const approvalStatus = await Review.findOne({
+            course_id: course_id
+        })
+
+        if( !approvalStatus ) apiError(400, "failed to get approval status");
+
+        res.status(200).json(
+            new apiResponse(
+                "approval status fetched successfully",
+                {
+                    reviewed: approvalStatus.reviewed,
+                    feedback: approvalStatus?.feedback
+                }
+            )
+        );
+
+
+
+    }
+)
+
+
+
+//-------------------------------------
 export{
     createCourse,
     createSection,
@@ -634,5 +717,7 @@ export{
     deleteLecture,
     deleteSection,
     deleteCourse,
-    getCourseDetail
+    getCourseDetail,
+    submitForApproval,
+    approvalStatus
 };
