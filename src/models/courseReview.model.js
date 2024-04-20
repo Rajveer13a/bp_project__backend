@@ -19,11 +19,19 @@ const reviewSchema = new Schema(
         reviewed:{
             type: Boolean,
             require: true,
-            default: null
+            default: false
+        },
+
+        reviewedBy:{
+            type: Schema.Types.ObjectId
         },
 
         feedback:{
             type: String
+        },
+
+        approved:{
+            type: Boolean
         }
     }
 );

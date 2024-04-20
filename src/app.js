@@ -37,6 +37,25 @@ import courseRouter from "./routes/course.routes.js";
 app.use("/api/v1/course",courseRouter);
 
 //----------------------------------
+
+import managementRouter from "./routes/management.routes.js";
+
+app.use("/api/v1/manage",managementRouter);
+
+
+//----------------------------------
+
+import studentRouter from "./routes/students.routes.js";
+
+app.use("/api/v1/student",studentRouter);
+
+//----------------------------------
+
+import paymentRouter from "./routes/payment.routes.js";
+
+app.use("/api/v1/payment",paymentRouter);
+
+//----------------------------------
 app.get("/ping",(req,res)=>{
     res.send("Pong from server")
 } )
