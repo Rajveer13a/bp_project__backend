@@ -2,35 +2,43 @@ import Course from "../models/course.model.js";
 import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import tryCatch from "../utils/tryCatch.js";
-import  mongoose  from "mongoose";
+import mongoose from "mongoose";
 
 const approvedCourses = tryCatch(
-    async(req, res)=>{
+    async (req, res) => {
 
         const courses = await Course.find(
             {
-                approved:true
+                approved: true
             }
         )
 
-        if(!courses) apiError(400,"failed to fetch courses");
+        if (!courses) apiError(400, "failed to fetch courses");
 
         res.status(200).json(
-            new apiResponse("courses fetched succesfully",courses)
+            new apiResponse("courses fetched succesfully", courses)
         )
     }
 );
 
 
 const courseById = tryCatch(
-    async (req, res )=>{
+    async (req, res) => {
 
         const { course_id } = req.body;
 
-        if( !course_id || course_id?.trim()===""){
+        const userCourses = req.user.purchasedCourses;
+
+        let resourceFlag = false;
+
+        if (userCourses.includes(course_id)) {
+            resourceFlag = true;
+        };
+
+        if (!course_id || course_id?.trim() === "") {
             apiError(400, " course id not given");
         };
-        
+
         const course = await Course.aggregate([
             {
                 $match: {
@@ -64,13 +72,17 @@ const courseById = tryCatch(
                                     },
                                     {
                                         $project: {
-                                            createdAt: 0,
-                                            updatedAt: 0,
-                                            instructor_id: 0,
-                                            section_id: 0,
-                                            resource: 0,
-                                            __v: 0,
-                                            approved: 0
+                                            createdAt: false,
+                                            updatedAt: false,
+                                            instructor_id: false,
+                                            section_id: false,
+                                            __v: false,
+                                            approved: false,
+                                        }
+                                    },
+                                    {
+                                        $addFields: {
+                                            resource: { $cond: { if: { $eq: [resourceFlag, false] }, then: "$$REMOVE", else: "$resource" } }
                                         }
                                     }
                                 ]
@@ -94,12 +106,12 @@ const courseById = tryCatch(
             }
         ]);
 
-        if( course.length ===0 ){
+        if (course.length === 0) {
             apiError(400, " no course found");
         };
 
         res.status(200).json(
-            new apiResponse("course fetched successfully",course[0])
+            new apiResponse("course fetched successfully", course[0])
         );
 
 
