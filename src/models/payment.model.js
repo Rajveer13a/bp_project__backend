@@ -22,6 +22,10 @@ const paymentSchema = new Schema({
     },
     signature: {
         type: String       
+    },
+    instuctor_id:{
+        type: mongoose.Schema.ObjectId,
+        required: true
     }
 
 });

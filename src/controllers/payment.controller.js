@@ -6,6 +6,7 @@ import { razorpay } from "../server.js";
 import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils.js";
 import Payment from "../models/payment.model.js";
 import User from "../models/user.model.js";
+import  mongoose from "mongoose";
 
 const createOrder = tryCatch(
     async(req, res)=>{
@@ -57,7 +58,8 @@ const createOrder = tryCatch(
             course_id: course._id,
             order_id: order.id,
             user_id: req.user._id,
-            paid: false
+            paid: false,
+            instuctor_id: course.instructor_id
         });
 
         res.status(200).json(
@@ -123,8 +125,52 @@ const verifyPayment = tryCatch(
     }
 );
 
+const mysales = tryCatch(
+    async (req,res)=>{
+
+        const instructor_id = req.instructor._id;
+       
+        const sales = await Payment.aggregate([
+            {
+                $match:{
+                    instructor_id              
+                }               
+            },
+            {
+                $project:{
+                    course_id: 1,
+                    paid: 1,
+                    price: 1,
+                    createdAt: 1,
+                    updatedAt: 1
+                }
+            }            
+        ]);
+
+        if(!sales) apiError(400, " failed to get sales data");
+
+        res.status(200).json(
+            new apiResponse("sales",sales)
+        );
+
+    }
+);
+
+const allSales = tryCatch(
+    async (req, res)=>{
+
+        const data = await Payment.find({});
+
+        res.status(200).json(
+            new apiResponse("sales data fetched successfullly", data)
+        );
+
+    }
+);
 
 export {
     createOrder,
-    verifyPayment
+    verifyPayment,
+    mysales,
+    allSales
 }
