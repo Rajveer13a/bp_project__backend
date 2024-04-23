@@ -7,6 +7,8 @@ import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils.
 import Payment from "../models/payment.model.js";
 import User from "../models/user.model.js";
 import  mongoose from "mongoose";
+import { Customer } from "../models/Payout/bankAccount.model.js";
+import { ourComission } from "../constants.js";
 
 const createOrder = tryCatch(
     async(req, res)=>{
@@ -59,7 +61,8 @@ const createOrder = tryCatch(
             order_id: order.id,
             user_id: req.user._id,
             paid: false,
-            instuctor_id: course.instructor_id
+            instuctor_id: course.instructor_id,
+            price: course.price
         });
 
         res.status(200).json(
@@ -108,6 +111,21 @@ const verifyPayment = tryCatch(
          order.payment_id = payment_id;
 
          await order.save();
+
+         const addMoney = await Customer.findOneAndUpdate(
+            {
+                instructor_id: order.instructor_id
+            },
+            {
+                $inc: {
+                    revenue: order.price
+                }
+            }
+         );
+
+         if(!addMoney) {
+            apiError(400,"failed to add money")
+         };
 
          const user = await User.findByIdAndUpdate(
             req.user._id,

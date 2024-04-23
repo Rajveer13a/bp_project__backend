@@ -33,3 +33,10 @@ export const videoExtn = [".mp4", ".mkv"] //extensions to be allowed
 
 export const fileSize = 400*1024*1024 //400mb
 export const fileExtn = [".pdf", ".doc"] //extensions to be allowed
+
+
+export const ourComission = 2 / 100 ; //2 percent  
+
+export const mintranferAmount = 10000 ; 
+
+export const payrollDate = [1,2,3,23] ; //payrolls execution date

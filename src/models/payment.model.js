@@ -23,8 +23,12 @@ const paymentSchema = new Schema({
     signature: {
         type: String       
     },
-    instuctor_id:{
+    instructor_id:{
         type: mongoose.Schema.ObjectId,
+        required: true
+    },
+    price: {
+        type: Number,
         required: true
     }
 

@@ -56,6 +56,12 @@ import paymentRouter from "./routes/payment.routes.js";
 app.use("/api/v1/payment",paymentRouter);
 
 //----------------------------------
+
+import revenueSharerouter from "./routes/revenueShare.routes.js";
+
+app.use("/api/v1/payouts", revenueSharerouter)
+//----------------------------------
+
 app.get("/ping",(req,res)=>{
     res.send("Pong from server")
 } )
