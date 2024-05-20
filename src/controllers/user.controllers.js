@@ -12,7 +12,7 @@ import { log } from "console";
 import {uploadCloudinary, cloudinary} from "../utils/cloudinary.js";
 
 const cookieOptions = {
-    httpOnly: true,
+    httpOnly: false,
     secure: true,
     sameSite: 'None'
 }
@@ -33,14 +33,15 @@ const registerUser = tryCatch(
         const exist = await User.findOne({ email });
 
         if (exist) {
-            if (exist.verifiedStatus === true) {
-                apiError(409, `user with email '${email}' already existed`);
-            }
+            // if (exist.verifiedStatus === true) {
+            //     apiError(409, `user with email '${email}' already existed`);
+            // }
 
-            res.status(200).json(
-                new apiResponse(`user account created , verify email '${email}' to continue`)
-            )
-            return;
+            // res.status(200).json(
+            //     new apiResponse(`user account created , verify email '${email}' to continue`)
+            // )
+            // return;
+            apiError(409, `user with email '${email}' already existed`);
 
         }
 
@@ -92,10 +93,14 @@ const emailVerificationToken = tryCatch(
 
             if (user.emailVerificationToken.emailLimit === 0) {
 
-                apiError(
-                    400,
-                    `verifiaction mail send to ${user.email}, if u still can't find it please try after ${tokenexpiry} `
+                // apiError(
+                //     400,
+                //     `verifiaction mail send to ${user.email}, if u still can't find it please try after ${tokenexpiry} `
+                // )
+                res.status(500).json(
+                    new apiResponse(`try after cooldown ${tokenexpiry}`, { tokenexpiry } , false)
                 )
+                return
             };
             //if ratelimit not exceeds
             const verificationToken = user.generateVerificationToken(false);
