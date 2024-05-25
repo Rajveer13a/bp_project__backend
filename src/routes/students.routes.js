@@ -4,9 +4,11 @@ import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.all("/*",isLoggedIn());
+
 
 router.get("/courses",approvedCourses);
+
+// router.all("/*",isLoggedIn());
 
 router.get("/courseDetail",courseById)
 

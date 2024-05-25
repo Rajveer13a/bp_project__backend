@@ -7,13 +7,48 @@ import mongoose from "mongoose";
 const approvedCourses = tryCatch(
     async (req, res) => {
 
-        const courses = await Course.find(
+        // const courses = await Course.find(
+        //     {
+        //         approved: true
+        //     }
+        // )
+
+        const courses = await Course.aggregate([
             {
-                approved: true
+                $lookup: {
+                    from: "instructors",
+                    localField: "instructor_id",
+                    foreignField: "_id",
+                    as: "instructor",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "user_id",
+                                foreignField: "_id",
+                                as: "user"
+                            }
+                        },
+                        {
+                            $unwind: "$user"
+                        },
+                        {
+                            $project: {
+                                username: "$user.username",
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $unwind: "$instructor"
             }
-        )
+        ]);
 
         if (!courses) apiError(400, "failed to fetch courses");
+
+        
+        
 
         res.status(200).json(
             new apiResponse("courses fetched succesfully", courses)
@@ -25,15 +60,16 @@ const approvedCourses = tryCatch(
 const courseById = tryCatch(
     async (req, res) => {
 
-        const { course_id } = req.body;
+        const { course_id } = req.query;
+        
 
-        const userCourses = req.user.purchasedCourses;
+        // const userCourses = req.user.purchasedCourses;
 
         let resourceFlag = false;
 
-        if (userCourses.includes(course_id)) {
-            resourceFlag = true;
-        };
+        // if (userCourses.includes(course_id)) {
+        //     resourceFlag = true;
+        // };
 
         if (!course_id || course_id?.trim() === "") {
             apiError(400, " course id not given");
@@ -48,27 +84,52 @@ const courseById = tryCatch(
             },
             {
                 $lookup: {
-                    localField: "_id",
-                    foreignField: "course_id",
-                    from: "sections",
-                    as: "sections",
+                    from: "instructors",
+                    localField: "instructor_id",
+                    foreignField: "_id",
+                    as: "instructor",
                     pipeline: [
                         {
-                            $sort: {
-                                createdAt: 1
+                            $lookup: {
+                                from: "users",
+                                localField: "user_id",
+                                foreignField: "_id",
+                                as: "user"
                             }
                         },
                         {
+                            $unwind: "$user"
+                        },
+                        {
+                            $project: {
+                                username: "$user.username",
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $unwind: "$instructor"
+            },
+            {
+                $lookup: {
+                    from: "sections",
+                    localField: "_id",
+                    foreignField: "course_id",
+                    as: "sections",
+                    pipeline: [
+                        {
+                            $sort: { createdAt: 1 }
+                        },
+                        {
                             $lookup: {
+                                from: "lectures",
                                 localField: "_id",
                                 foreignField: "section_id",
-                                from: "lectures",
                                 as: "lectures",
                                 pipeline: [
                                     {
-                                        $sort: {
-                                            createdAt: 1
-                                        }
+                                        $sort: { createdAt: 1 }
                                     },
                                     {
                                         $project: {
@@ -101,10 +162,10 @@ const courseById = tryCatch(
                         instructor_id: 0
                     },
                     __v: 0,
-
                 }
             }
         ]);
+
 
         if (course.length === 0) {
             apiError(400, " no course found");
