@@ -102,7 +102,17 @@ const courseById = tryCatch(
                         },
                         {
                             $project: {
+
+                                image: "$user.profileImage.secure_url",
+                                bio: 1,
                                 username: "$user.username",
+
+
+                                // image: "$user?.profileImage"
+                                // user : {
+                                //     profileImage : 1
+                                // }
+                                
                             }
                         }
                     ]
@@ -180,7 +190,60 @@ const courseById = tryCatch(
     }
 );
 
+
+const learning = tryCatch(
+    async( req, res )=>{
+
+        const courseList = req.user.purchasedCourses.map((value)=> new mongoose.Types.ObjectId(value)) ;
+        
+        const courses = await Course.aggregate([
+            {
+                $match:{
+                    _id: { $in: courseList }
+                }
+            },
+            {
+                $lookup: {
+                    from: "instructors",
+                    localField: "instructor_id",
+                    foreignField: "_id",
+                    as: "instructor",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "user_id",
+                                foreignField: "_id",
+                                as: "user"
+                            }
+                        },
+                        {
+                            $unwind: "$user"
+                        },
+                        {
+                            $project: {
+                                username: "$user.username",
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $unwind: "$instructor"
+            }
+        ]);
+
+        if(!courses) apiError("failed to get courses");
+
+        res.status(200).json(
+            new apiResponse("your course list fetched successfully", courses)
+        )
+        
+    }
+);
+
 export {
     approvedCourses,
-    courseById
+    courseById,
+    learning
 };
