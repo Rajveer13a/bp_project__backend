@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changePassword, emailVerificationToken, forgotPassword, getProfile, loginUser, logoutUser, refreshAccessToken, registerUser, resetPassword, updateUserAvatarImage, updateUserDetails, verifyUserAccount } from "../controllers/user.controllers.js";
+import {  cart, changePassword, emailVerificationToken, favourite, forgotPassword, getProfile, loginUser, logoutUser, refreshAccessToken, registerUser, resetPassword, updateUserAvatarImage, updateUserDetails, userConfig, verifyUserAccount } from "../controllers/user.controllers.js";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
 import multerfunc from "../middlewares/multer.middleware.js";
 import { imageExtn, imageSize } from "../constants.js";
@@ -35,5 +35,11 @@ router.post('/resetPassword/:token',resetPassword);
 router.post('/updateUserAvatarImage',isLoggedIn(),imagemulter.single("avatar"),updateUserAvatarImage);
 
 router.post('/updateUserDetails',isLoggedIn(),updateUserDetails);
+
+router.get('/userconfig', isLoggedIn(), userConfig);
+
+router.get('/cart', isLoggedIn(), cart);
+
+router.get('/favourite', isLoggedIn(), favourite);
 
 export default router;

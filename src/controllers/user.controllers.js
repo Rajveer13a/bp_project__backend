@@ -10,6 +10,9 @@ import jwt from "jsonwebtoken";
 import { type } from "os";
 import { log } from "console";
 import {uploadCloudinary, cloudinary} from "../utils/cloudinary.js";
+import UserConfig from "../models/user.config.js";
+import mongoose from "mongoose";
+import Course from "../models/course.model.js";
 
 const cookieOptions = {
     httpOnly: false,
@@ -538,6 +541,216 @@ const updateUserDetails = tryCatch(
     }
 )
 
+const userConfig = tryCatch(
+    async (req, res )=>{
+        
+        let config = await UserConfig.findOne({
+            user_id : req.user._id
+        });
+
+        if(!config){
+            config = await UserConfig.create({
+                user_id: req.user._id
+            });
+            
+        };
+
+
+        const favouriteList = config.favourite.map((value)=> new mongoose.Types.ObjectId(value)) ;
+        const cartList = config.cart.map((value)=> new mongoose.Types.ObjectId(value)) ;
+        
+        const results = await Course.aggregate([
+            {
+                $facet: {
+                    cart: [
+                        {
+                            $match: {
+                                _id: { $in: cartList}
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: "instructors",
+                                localField: "instructor_id",
+                                foreignField: "_id",
+                                as: "instructor",
+                                pipeline: [
+                                    {
+                                        $lookup: {
+                                            from: "users",
+                                            localField: "user_id",
+                                            foreignField: "_id",
+                                            as: "user"
+                                        }
+                                    },
+                                    {
+                                        $unwind: "$user"
+                                    },
+                                    {
+                                        $project: {
+                                            username: "$user.username",
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $unwind: "$instructor"
+                        }
+                    ],
+                    favourites: [
+                        {
+                            $match: {
+                                _id: { $in: favouriteList }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: "instructors",
+                                localField: "instructor_id",
+                                foreignField: "_id",
+                                as: "instructor",
+                                pipeline: [
+                                    {
+                                        $lookup: {
+                                            from: "users",
+                                            localField: "user_id",
+                                            foreignField: "_id",
+                                            as: "user"
+                                        }
+                                    },
+                                    {
+                                        $unwind: "$user"
+                                    },
+                                    {
+                                        $project: {
+                                            username: "$user.username",
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $unwind: "$instructor"
+                        }
+                    ]
+                }
+            }
+        ]);
+        
+        const cart = results[0].cart;
+        const favourites = results[0].favourites;
+       
+        
+        
+        res.status(200).json(
+            new apiResponse("config fetched successfully",{cart, favourites})
+        )
+    }
+)
+
+const cart = tryCatch(
+    async (req, res )=>{
+
+        const { add, remove } = req.query;
+        
+
+        let cart;
+        if(mongoose.Types.ObjectId.isValid(remove)){
+            cart = await UserConfig.findOneAndUpdate(
+                {
+                    user_id: req.user._id
+                },
+                {
+                    $pull:{
+                        cart: remove
+                    }
+                },
+                {
+                    new: true
+                }
+            );
+           
+        }else if(mongoose.Types.ObjectId.isValid(add)){
+            cart = await UserConfig.findOneAndUpdate(
+                {
+                    user_id: req.user._id
+                },
+                {
+                    $addToSet:{
+                        cart: add
+                    }
+                },
+                {
+                    new:true
+                }
+            )
+        };
+
+        if(!cart) apiError(400,"something went wrong");
+        
+
+        const message = add!= undefined ? "course added to cart" : "course remove from the cart" ;
+
+        res.status(200).json(
+            new apiResponse( message , cart)
+        )
+        
+
+
+    }
+)
+
+const favourite = tryCatch(
+    async (req, res )=>{
+
+        const { add, remove } = req.query;
+        
+
+        let favourite;
+        if(mongoose.Types.ObjectId.isValid(remove)){
+            favourite = await UserConfig.findOneAndUpdate(
+                {
+                    user_id: req.user._id
+                },
+                {
+                    $pull:{
+                        favourite: remove
+                    }
+                },
+                {
+                    new: true
+                }
+            );
+           
+        }else if(mongoose.Types.ObjectId.isValid(add)){
+            favourite = await UserConfig.findOneAndUpdate(
+                {
+                    user_id: req.user._id
+                },
+                {
+                    $addToSet:{
+                        favourite: add
+                    }
+                },
+                {
+                    new:true
+                }
+            )
+        };
+
+        if(!favourite) apiError(400,"something went wrong");
+
+        res.status(200).json(
+            new apiResponse("updated succesfully",favourite)
+        )
+        
+
+
+    }
+)
+
+
 export {
     registerUser,
     emailVerificationToken,
@@ -550,6 +763,9 @@ export {
     forgotPassword,
     resetPassword,
     updateUserAvatarImage,
-    updateUserDetails
+    updateUserDetails,
+    userConfig,
+    cart,
+    favourite
 
 }
