@@ -7,7 +7,7 @@ const customerSchema = Schema({
         required: true
     },
     instructor_id: {
-        type: String,
+        type: Schema.Types.ObjectId,
         required: true
     },
     revenue: {

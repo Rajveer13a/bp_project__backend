@@ -6,7 +6,7 @@ const router = Router();
 
 router.all("/*",isLoggedIn())
 
-router.get("/createOrder", createOrder);
+router.post("/createOrder", createOrder);
 
 router.post("/verify", verifyPayment);
 

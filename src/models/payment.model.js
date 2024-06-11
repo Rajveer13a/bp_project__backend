@@ -1,18 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 
 const paymentSchema = new Schema({
-    order_id : {
+    order_id: {
         type: String,
         required: true
     },
-    user_id : {
+    user_id: {
         type: mongoose.Schema.ObjectId,
         required: true
     },
-    course_id : {
-        type: mongoose.Schema.ObjectId,
-        required: true
-    },
+    course_ids: [
+        {type: mongoose.Schema.ObjectId,
+        required: true}
+    ],
     paid: {
         type: Boolean,
         required: true
@@ -21,19 +21,24 @@ const paymentSchema = new Schema({
         type: String
     },
     signature: {
-        type: String       
+        type: String
     },
-    instructor_id:{
-        type: mongoose.Schema.ObjectId,
-        required: true
-    },
-    price: {
-        type: Number,
-        required: true
-    }
+    instructors: [
+        {
+            _id: {
+                type: mongoose.Schema.ObjectId,
+                required: true
+            },
+            price: {
+                type: Number,
+                required: true
+            }
+        }
+    ]
+
 
 });
 
-const Payment = mongoose.model("Payment",paymentSchema);
+const Payment = mongoose.model("Payment", paymentSchema);
 
 export default Payment;
