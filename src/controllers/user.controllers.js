@@ -653,7 +653,7 @@ const cart = tryCatch(
     async (req, res )=>{
 
         const { add, remove } = req.query;
-        
+        console.log(remove);
 
         let cart;
         if(mongoose.Types.ObjectId.isValid(remove)){

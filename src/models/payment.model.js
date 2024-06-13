@@ -32,7 +32,13 @@ const paymentSchema = new Schema({
             price: {
                 type: Number,
                 required: true
-            }
+            },
+            courses: [{
+                course_id : {
+                    type:Schema.Types.ObjectId
+                },
+                price : Number
+            }]
         }
     ]
 

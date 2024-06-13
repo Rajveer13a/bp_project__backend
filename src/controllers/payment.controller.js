@@ -9,6 +9,7 @@ import User from "../models/user.model.js";
 import mongoose from "mongoose";
 import { Customer } from "../models/Payout/bankAccount.model.js";
 import { ourComission } from "../constants.js";
+import UserConfig from "../models/user.config.js";
 
 const createOrder = tryCatch(
     async (req, res) => {
@@ -16,8 +17,14 @@ const createOrder = tryCatch(
         const { course_ids } = req.body;
 
         if (!course_ids || !Array.isArray(course_ids) || course_ids.length === 0) {
-            return apiError(400, "course ids not given or invalid");
+            apiError(400, "course ids not given or invalid");
         };
+
+        if( course_ids.some((value)=>{
+            return req.user.purchasedCourses.includes(value)
+        })){
+            apiError(400, "one of the course is already purchased")
+        }
 
         const courses = await Course.find({
             _id: { $in: course_ids },
@@ -30,6 +37,7 @@ const createOrder = tryCatch(
 
         const orderExist = await Payment.findOne({
             user_id: req.user._id,
+            paid : false,
             course_ids: { $all: course_ids },
             $expr: { $eq: [{ $size: "$course_ids" }, course_ids.length] }
         });
@@ -65,11 +73,14 @@ const createOrder = tryCatch(
         courses.forEach((value) => {
             const instructorId = value.instructor_id;
             const price = value.price;
+            const course_id = value._id 
 
             if (instructorPriceMap[instructorId]) {
                 instructorPriceMap[instructorId].price += price;
+                instructorPriceMap[instructorId].courses.push({course_id, price});
+
             } else {
-                instructorPriceMap[instructorId] = { _id: instructorId, price: price };
+                instructorPriceMap[instructorId] = { _id: instructorId, price: price, courses: [{course_id, price}] };
             }
         });
 
@@ -162,6 +173,26 @@ const verifyPayment = tryCatch(
 
         if (!user) apiError(400, " falied to add course for user");
 
+        const ids_remove = order.course_ids.map((value)=>{
+            return value.toString()
+        })
+        console.log(ids_remove);
+        const userConfig =  await UserConfig.findOneAndUpdate(
+            {
+                user_id: req.user._id
+            },
+            {
+                $pullAll:{
+                    cart: ids_remove
+                }
+            },
+            {
+                new: true
+            }
+        );
+        console.log("ashdfg", order.course_ids);
+        console.log(userConfig)
+
         res.status(200).json(
             new apiResponse("course added successfully ")
         )
@@ -169,36 +200,86 @@ const verifyPayment = tryCatch(
     }
 );
 
+// const mysales = tryCatch(
+//     async (req, res) => {
+
+//         const instructor_id = req.instructor._id;
+
+//         const sales = await Payment.aggregate([
+//             {
+//                 $match: {
+//                     "instructors._id": instructor_id
+//                 }
+//             },
+//             {
+//                 $project: {
+//                     instructors: {
+//                         $filter: {
+//                             input: "$instructors",
+//                             as: "instructor",
+//                             cond: { $eq: ["$$instructor._id", instructor_id] }
+//                         }
+//                     },
+                    
+//                 }
+//             }
+//         ]);
+        
+
+//         if (!sales) apiError(400, " failed to get sales data");
+
+//         res.status(200).json(
+//             new apiResponse("sales", sales)
+//         );
+
+//     }
+// );
+
 const mysales = tryCatch(
     async (req, res) => {
-
         const instructor_id = req.instructor._id;
 
         const sales = await Payment.aggregate([
             {
                 $match: {
-                    instructor_id
+                    "instructors._id": instructor_id
+                }
+            },
+            {
+                $unwind: "$instructors"
+            },
+            {
+                $match: {
+                    "instructors._id": instructor_id
                 }
             },
             {
                 $project: {
-                    course_id: 1,
                     paid: 1,
-                    price: 1,
-                    createdAt: 1,
-                    updatedAt: 1
+                    course: "$instructors.courses"
+                }
+            },
+            {
+                $unwind: "$course"
+            },
+            {
+                $project: {
+                    paid: 1,
+                    course_id: "$course.id",
+                    course_price: "$course.price"
                 }
             }
         ]);
 
-        if (!sales) apiError(400, " failed to get sales data");
+        if (!sales) apiError(400, "Failed to get sales data");
 
         res.status(200).json(
             new apiResponse("sales", sales)
         );
-
     }
 );
+
+
 
 const allSales = tryCatch(
     async (req, res) => {
