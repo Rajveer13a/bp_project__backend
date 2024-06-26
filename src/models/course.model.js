@@ -8,27 +8,32 @@ const courseSchema = new Schema({
     title:{
         type:String,
         required:true,
-        minlength:[10,"title needs to be more than 10 words"],
+        minlength:[1,"title needs to be more than 10 words"],
         maxlength:[30,"title needs to be less than 10 words"]
     },
     thumbnail:{
         public_id:{
             type:String,
-            required:true
+            // required:true
         },
         secure_url:{
             type:String,
-            required:true
+            // required:true
         },
         
     },
+    category:{
+        type: String,
+        required : true,
+        enum: ["Music", "Development", "Business", "Finance", "Accounting", "IT & Software", "Office Productivity", "Personal Development", "Design", "Marketing", "Lifestyle", "Photography & Video", "Health & Fitness", "Teaching & Academics", "I don't know yet"] 
+    },
     price:{
         type:Number,
-        required:true
+        // required:true
     },
     description:{
         type:String,
-        required:true,
+        // required:true,
         minlength:[200,"description needs to be more than 200 words"],
         maxlength:[600,"description needs to be less than 600 words"]
     },

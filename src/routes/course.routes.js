@@ -18,7 +18,7 @@ const router = Router();
 
 router.all("/*", isLoggedIn(), authorizedroles("INSTRUCTOR"))
 
-router.post('/', imageMulter.single('thumbnail'), createCourse);
+router.post('/', createCourse);
 
 router.post('/section/:course_id', createSection);
 

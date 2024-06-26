@@ -65,12 +65,20 @@ const createCourse = tryCatch(
     async (req, res) => {
         let user = req.user;
 
-        const { title, price, description } = req.body;
+        // const { title, price, description } = req.body;
+        const { title, category } = req.body;
+        
+        // const thumbnail = req.file?.path;
 
-        const thumbnail = req.file?.path;
+        // if (
+        //     [title, price, description, thumbnail].some(
+        //         (value) => value === undefined || value?.trim() === "")
+        // ) {
+        //     apiError(400, "all fields are required");
+        // };
 
         if (
-            [title, price, description, thumbnail].some(
+            [title, category ].some(
                 (value) => value === undefined || value?.trim() === "")
         ) {
             apiError(400, "all fields are required");
@@ -81,26 +89,27 @@ const createCourse = tryCatch(
         const course = await Course.create(
             {
                 title,
-                price,
-                description,
+                // price,
+                // description,
                 instructor_id: instructor._id,
-                thumbnail: {
-                    public_id: "null",
-                    secure_url: "null"
-                }
+                category
+                // thumbnail: {
+                //     public_id: "null",
+                //     secure_url: "null"
+                // }
             }
         );
 
-        const thumbnial_image = await uploadCloudinary(thumbnail, "image", thumbnailImgConfig);
+        // const thumbnial_image = await uploadCloudinary(thumbnail, "image", thumbnailImgConfig);
 
-        if (!thumbnial_image) apiError("failed to upload thumbnial");
+        // if (!thumbnial_image) apiError("failed to upload thumbnial");
 
-        course.thumbnail = {
-            public_id: thumbnial_image.public_id,
-            secure_url: thumbnial_image.secure_url
-        };
+        // course.thumbnail = {
+        //     public_id: thumbnial_image.public_id,
+        //     secure_url: thumbnial_image.secure_url
+        // };
 
-        await course.save();
+        // await course.save();
 
         res.status(200).json(
             new apiResponse("course created successfully", course)
@@ -111,7 +120,7 @@ const createCourse = tryCatch(
 
 
     }
-);
+); 
 
 //-------------------------------------
 
