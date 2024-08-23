@@ -5,11 +5,17 @@ const courseSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:"Instructor"
     },
+    sections:[
+        {
+            type:Schema.Types.ObjectId
+        }
+    ]
+    ,
     title:{
         type:String,
         required:true,
         minlength:[1,"title needs to be more than 10 words"],
-        maxlength:[30,"title needs to be less than 10 words"]
+        maxlength:[100,"title needs to be less than 100 words"]
     },
     thumbnail:{
         public_id:{

@@ -158,6 +158,12 @@ const createSection = tryCatch(
 
         if (!section) apiError(400, "failed to create section");
 
+        const id =
+
+        course.sections.push(section._id)
+
+        const saving_id=await course.save();        
+
         res.status(200).json(
             new apiResponse("section  created successfully", section)
         )
@@ -489,7 +495,7 @@ const deleteSection = tryCatch(
         };
 
         res.status(200).json(
-            new apiResponse("section deleted successfully")
+            new apiResponse("section deleted successfully" , {_id:section_id})
         )
 
         return;
