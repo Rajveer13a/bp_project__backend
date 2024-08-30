@@ -9,7 +9,7 @@ function multerfunc(fileSize,allowedfile){
             destination:"public/",
             filename:(_req,file,cb)=>{
                 const uniqueStr= Date.now() + '-' + Math.round(Math.random() * 1E9)
-                cb(null, (uniqueStr + "-"+file.originalname) );
+                cb(null, (uniqueStr + "@$#-#$@"+file.originalname) );
             },
         }),
         fileFilter: (_req,file,cb)=>{

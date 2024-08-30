@@ -30,6 +30,15 @@ const lectureSchema = new Schema({
         },
         secure_url:{
             type:String
+        },
+        duration:{
+            type:Number
+        },
+        thumbnail:{
+            type: String
+        },
+        filename:{
+            type:String
         }
     },
     approved:{

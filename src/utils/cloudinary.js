@@ -21,13 +21,25 @@ async function uploadCloudinary(localFilePath,type,imgConfig){
             );
             
         }else if(type==="video"){
-            response = await cloudinary.uploader.upload(
-                localFilePath,
-                {
-                    resource_type:"video",
-                    folder: 'udemy/lecture/videos',
-                }
-            );
+            
+            response = await new Promise((resolve, reject) => {
+                cloudinary.uploader.upload_large(
+                    localFilePath,
+                    {
+                        resource_type: "video",
+                        folder: 'udemy/lecture/videos',
+                        format: "mp4"
+                    },
+                    (error, result) => {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            fs.unlinkSync(localFilePath);
+                            resolve(result);
+                        }
+                    }
+                );
+            });
 
         }else{
             response = await cloudinary.uploader.upload(
@@ -38,10 +50,8 @@ async function uploadCloudinary(localFilePath,type,imgConfig){
                 },
                 
             );
-        }
-
-        fs.unlinkSync(localFilePath);
-
+        } 
+        
         return response;
 
     } catch (error) {

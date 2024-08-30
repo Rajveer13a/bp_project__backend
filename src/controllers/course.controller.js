@@ -38,6 +38,10 @@ async function addNewResourceToLecture(req, type) {
         type,
 
     );
+    console.log(lectureResource)
+
+    ;
+    
 
     if (!lectureResource) apiError(400, " falied to upload lecture video");
 
@@ -48,9 +52,13 @@ async function addNewResourceToLecture(req, type) {
         if (dest.result === "not found") apiError(400, "failed to destroy");
     }
 
+    const filename = lectureResource.original_filename.split("@$#-#$@")[1];
+
     lecture.resource = {
         public_id: lectureResource.public_id,
-        secure_url: lectureResource.secure_url
+        secure_url: lectureResource.secure_url,
+        duration: lectureResource.duration,
+        filename: filename
     };
 
     lecture.type = type;
