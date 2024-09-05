@@ -23,7 +23,7 @@ const getCourses = tryCatch(
 const courseDetail = tryCatch(
     async (req, res) => {
 
-        const { course_id } = req.body;
+        const { course_id } = req.query;
 
         if (!course_id || course_id?.trim() == "") apiError(400, "course id not given");
 

@@ -4,15 +4,17 @@ import { changeRole, courseDetail, getCourses, reviewing} from "../controllers/m
 
 const router = Router();
 
-router.all("/*",isLoggedIn(),authorizedroles("ADMIN"));
+router.all("/*",isLoggedIn());
 
-router.get("/coursesForReview", authorizedroles('MODES'), getCourses);
+router.get("/coursesForReview/", authorizedroles('MODE',"ADMIN"), getCourses);
 
-router.get("/courseDetail",authorizedroles('MODES'), courseDetail);
+router.get("/courseDetail/",authorizedroles('MODE',"ADMIN"), courseDetail);
 
-router.post("/review",authorizedroles('MODES'),reviewing);
+router.post("/review",authorizedroles('MODE',"ADMIN"),reviewing);
 
-router.patch("/changeRoles",changeRole);
+//admin specific routes
+
+router.patch("/changeRoles",authorizedroles("ADMIN"),changeRole);
 
 
 
