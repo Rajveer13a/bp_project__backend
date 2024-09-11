@@ -45,6 +45,9 @@ const lectureSchema = new Schema({
         type:Boolean,
         default:false 
     },
+    feedback:{
+        type:"String"
+    },
     __v:{
         type:Number,
         required:false

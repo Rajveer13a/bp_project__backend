@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 
 export default function errorHandler(err,req,res,next){
-    // console.log(err)
+    console.log(err)
     if(err instanceof jwt.TokenExpiredError){
         res.status(err.errorCode || 401 ).json({
             success:false,

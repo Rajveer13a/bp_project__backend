@@ -5,6 +5,7 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import tryCatch from "../utils/tryCatch.js";
 import User from "../models/user.model.js";
+import Lecture from "../models/sectionLecture.model.js";
 
 const getCourses = tryCatch(
     async (req, res) => {
@@ -39,7 +40,7 @@ const courseDetail = tryCatch(
                     _id: new mongoose.Types.ObjectId(course_id)
                 }
             },
-            {
+            {   
                 $lookup: {
                     localField: "_id",
                     foreignField: "course_id",
@@ -102,14 +103,50 @@ const courseDetail = tryCatch(
     }
 );
 
+const reviewLecture = tryCatch(
+    async (req,res) => {
+
+        let {lecture_id, flag, feedback} = req.body;
+        
+        if (!lecture_id || flag == undefined) apiError(400, "required feilds are not given");     
+                
+        if(!flag && (feedback === undefined || feedback?.trim()==="")){
+            
+            apiError(400, "required feilds are not given");
+        }
+       
+        let feed = !flag ? feedback : "";
+        
+        const lecture = await Lecture.findByIdAndUpdate(lecture_id,{
+                $set:{
+                    approved: flag,
+                    feedback: feed
+                }
+            }
+        );  
+
+        if(!lecture){
+            apiError(400,"lecture not found");
+        }
+
+        res.status(200).json(
+            new apiResponse("lecture status updated successfully")
+        );
+
+
+
+    }
+)
+
+
 const reviewing = tryCatch(
     async(req, res)=>{
 
         const { feedback, flag, course_id } = req.body;
 
-        if( [feedback, flag, course_id].some(
+        if( [flag, course_id].some(
             value => value === undefined ||
-                    value?.trim() === ""
+                    (typeof value =="string" && value?.trim() === "")
         )){
             apiError(400,"all fields are required")
         };
@@ -119,7 +156,7 @@ const reviewing = tryCatch(
                 course_id: course_id
             },{
                 $set:{
-                    feedback:feedback,
+                    feedback:feedback && feedback,
                     reviewed:true,
                     approved: flag,
                     reviewedBy: req.user._id
@@ -185,5 +222,6 @@ export {
     getCourses,
     courseDetail,
     reviewing,
-    changeRole
+    changeRole,
+    reviewLecture
 }

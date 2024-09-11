@@ -40,8 +40,8 @@ async function addNewResourceToLecture(req, type) {
     );
     console.log(lectureResource)
 
-    ;
-    
+        ;
+
 
     if (!lectureResource) apiError(400, " falied to upload lecture video");
 
@@ -75,7 +75,7 @@ const createCourse = tryCatch(
 
         // const { title, price, description } = req.body;
         const { title, category } = req.body;
-        
+
         // const thumbnail = req.file?.path;
 
         // if (
@@ -86,7 +86,7 @@ const createCourse = tryCatch(
         // };
 
         if (
-            [title, category ].some(
+            [title, category].some(
                 (value) => value === undefined || value?.trim() === "")
         ) {
             apiError(400, "all fields are required");
@@ -128,7 +128,7 @@ const createCourse = tryCatch(
 
 
     }
-); 
+);
 
 //-------------------------------------
 
@@ -168,9 +168,9 @@ const createSection = tryCatch(
 
         const id =
 
-        course.sections.push(section._id)
+            course.sections.push(section._id)
 
-        const saving_id=await course.save();        
+        const saving_id = await course.save();
 
         res.status(200).json(
             new apiResponse("section  created successfully", section)
@@ -346,26 +346,32 @@ const updateSecitonTitle = tryCatch(
 const updateCourseDetails = tryCatch(
     async (req, res) => {
 
-        const { price, description, title } = req.body;
+        const {description, title, subtitle, language, level, category  } = req.body;
 
         const { course_id } = req.params;
+        // console.log(description, title, subtitle, language, level, category)
 
-        let thumbnail = req.file?.path;
+        if( [description, title, subtitle, language, level, category, course_id ].some(
+            (value) => value==undefined || value?.trim() ==""
+        )){
+            apiError(400, "all fields are required");
+        }
 
-        const fields = {
-            price: price,
-            description: description,
-            title: title
-        };
+        // let thumbnail = req.file?.path;
 
-        const givenFields = Object.keys(fields).filter(
-            value => fields[value] !== undefined ||
-                fields[value]?.trim() === ""
-        )
+        // const fields = {
+        //     description: description,
+        //     title: title
+        // };
 
-        if (givenFields.length === 0 && !thumbnail) {
-            apiError(400, "no field is given to update");
-        };
+        // const givenFields = Object.keys(fields).filter(
+        //     value => fields[value] !== undefined ||
+        //         fields[value]?.trim() === ""
+        // )
+
+        // if (givenFields.length === 0 && !thumbnail) {
+        //     apiError(400, "no field is given to update");
+        // };
 
         const course = await Course.findOne(
             {
@@ -376,34 +382,44 @@ const updateCourseDetails = tryCatch(
 
         if (!course) apiError(400, "course not found");
 
-        if (thumbnail) {//change thumbnail
+        
 
-            const dest = await cloudinary.uploader.destroy(
-                course.thumbnail.public_id,
-            );
+        const fieldObj = {description, title, subtitle, language, level, category  };
 
-            if (dest.result === "not found") {
-                apiError(400, "failed to delete previous thumbnail")
-            };
+        Object.keys(fieldObj).map((value)=>{
+            course[value] = fieldObj[value];
+        })
+        
+        
 
-            thumbnail = await uploadCloudinary(thumbnail, "image", thumbnailImgConfig);
+        // if (thumbnail) {//change thumbnail
 
-            if (!thumbnail) apiError(400, "failed to upload new thumbnail");
+        //     const dest = await cloudinary.uploader.destroy(
+        //         course.thumbnail.public_id,
+        //     );
 
-            course.thumbnail = {
-                public_id: thumbnail.public_id,
-                secure_url: thumbnail.secure_url
-            };
+        //     if (dest.result === "not found") {
+        //         apiError(400, "failed to delete previous thumbnail")
+        //     };
+
+        //     thumbnail = await uploadCloudinary(thumbnail, "image", thumbnailImgConfig);
+
+        //     if (!thumbnail) apiError(400, "failed to upload new thumbnail");
+
+        //     course.thumbnail = {
+        //         public_id: thumbnail.public_id,
+        //         secure_url: thumbnail.secure_url
+        //     };
 
 
-        };
+        // };
 
         //adding user given field 
-        givenFields.forEach(
-            (value) => {
-                course[value] = fields[value];
-            }
-        );
+        // givenFields.forEach(
+        //     (value) => {
+        //         course[value] = fields[value];
+        //     }
+        // );
 
         await course.save();
 
@@ -503,7 +519,7 @@ const deleteSection = tryCatch(
         };
 
         res.status(200).json(
-            new apiResponse("section deleted successfully" , {_id:section_id})
+            new apiResponse("section deleted successfully", { _id: section_id })
         )
 
         return;
@@ -538,12 +554,17 @@ const deleteCourse = tryCatch(
 
         //deleting thumbnail of the course
 
-        const delThumbnial = await cloudinary.uploader.destroy(
-            course.thumbnail.public_id,
-            { resource_type: "image" }
-        );
+        let delThumbnial;
 
-        if (delThumbnial.result === "not found") apiError(400, "failed to destroy");
+        if (course?.thumbnail?.public_id) {
+            delThumbnial = await cloudinary.uploader.destroy(
+                course.thumbnail.public_id,
+                { resource_type: "image" }
+            );
+        }
+
+
+        if (delThumbnial?.result === "not found") apiError(400, "failed to destroy");
 
         const deletingCourse = await Course.findByIdAndDelete(
             course._id

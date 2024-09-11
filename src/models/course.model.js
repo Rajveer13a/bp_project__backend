@@ -1,51 +1,103 @@
-import mongoose , {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const courseSchema = new Schema({
-    instructor_id:{
-        type:Schema.Types.ObjectId,
-        ref:"Instructor"
+    instructor_id: {
+        type: Schema.Types.ObjectId,
+        ref: "Instructor"
     },
-    sections:[
+    sections: [
         {
-            type:Schema.Types.ObjectId
+            type: Schema.Types.ObjectId
         }
     ]
     ,
-    title:{
-        type:String,
-        required:true,
-        minlength:[1,"title needs to be more than 10 words"],
-        maxlength:[100,"title needs to be less than 100 words"]
-    },
-    thumbnail:{
-        public_id:{
-            type:String,
-            // required:true
-        },
-        secure_url:{
-            type:String,
-            // required:true
-        },
-        
-    },
-    category:{
+    title: {
         type: String,
-        required : true,
-        enum: ["Music", "Development", "Business", "Finance", "Accounting", "IT & Software", "Office Productivity", "Personal Development", "Design", "Marketing", "Lifestyle", "Photography & Video", "Health & Fitness", "Teaching & Academics", "I don't know yet"] 
+        required: true,
+        minlength: [1, "title needs to be more than 10 words"],
+        maxlength: [100, "title needs to be less than 100 words"]
     },
-    price:{
-        type:Number,
+    subtitle: {
+        type: String,
+        required: true,
+        minlength: [5, "subtitle needs to be moder than 5 words"],
+        maxlength: [100, "title needs to be less than 100 words"]
+    },
+    language: {
+        type: String,
+        enum: [
+            "english",
+            "spanish",
+            "mandarin",
+            "hindi",
+            "french",
+            "arabic",
+            "bengali",
+            "portuguese",
+            "russian"
+        ]
+    },
+
+    level: {
+        type: String,
+        enum: ["beginner", "intermediate", "expert", "all"]
+    },
+
+    trailerVideo: {
+        public_id: {
+            type: String,
+            // required:true
+        },
+        secure_url: {
+            type: String,
+            // required:true
+        },
+    },
+
+    thumbnail: {
+        public_id: {
+            type: String,
+            // required:true
+        },
+        secure_url: {
+            type: String,
+            // required:true
+        },
+
+    },
+    category: {
+        type: String,
+        required: true,
+        enum: [
+            "music",
+            "development",
+            "business",
+            "finance",
+            "accounting",
+            "it-software",
+            "office-productivity",
+            "personal-development",
+            "design",
+            "marketing",
+            "lifestyle",
+            "photography-video",
+            "health-fitness",
+            "teaching-academics"
+          ]
+    },
+    price: {
+        type: Number,
         // required:true
     },
-    description:{
-        type:String,
+    description: {
+        type: String,
         // required:true,
-        minlength:[200,"description needs to be more than 200 words"],
-        maxlength:[600,"description needs to be less than 600 words"]
+        minlength: [200, "description needs to be more than 200 words"],
+        maxlength: [600, "description needs to be less than 600 words"]
     },
-    approved:{
-        type:Boolean,
-        default:false
+    approved: {
+        type: Boolean,
+        default: false
     },
     createdAt: {
         type: Date,
@@ -59,9 +111,9 @@ const courseSchema = new Schema({
         type: Number,
         select: false
     },
-    
+
 });
 
-const Course = mongoose.model("Course",courseSchema);
+const Course = mongoose.model("Course", courseSchema);
 
-export default  Course;
+export default Course;

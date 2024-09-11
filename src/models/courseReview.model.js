@@ -27,7 +27,7 @@ const reviewSchema = new Schema(
         },
 
         feedback:{
-            type: String
+            type: Object
         },
 
         approved:{
