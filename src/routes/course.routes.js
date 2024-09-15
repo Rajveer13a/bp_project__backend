@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addLecturetitle, addVideoToLecture, addfileTOLecture, approvalStatus, createCourse, createSection, deleteCourse, deleteLecture, deleteSection, getCourseDetail, submitForApproval, updateCourseDetails, updateLectureTitle, updateSecitonTitle } from "../controllers/course.controller.js";
+import { addLecturetitle, addVideoToLecture, addfileTOLecture, approvalStatus, createCourse, createSection, deleteCourse, deleteLecture, deleteSection, getCourseDetail, submitForApproval, updateCourseDetails, updateLectureTitle, updateMedia, updateSecitonTitle } from "../controllers/course.controller.js";
 import { authorizedroles, isLoggedIn } from "../middlewares/auth.middleware.js";
 import multerfunc from "../middlewares/multer.middleware.js";
 import { fileExtn, fileSize, imageExtn, imageSize, videoExtn, videoSize } from "../constants.js";
@@ -9,6 +9,8 @@ import { fileExtn, fileSize, imageExtn, imageSize, videoExtn, videoSize } from "
 const imageMulter = multerfunc(imageSize, imageExtn);
 
 const videoMulter = multerfunc(videoSize, videoExtn);
+
+const mixMulter = multerfunc(400*1024*1024, [".jpg", ".png", ".mp4", ".mkv"]);
 
 const fileMulter = multerfunc(fileSize, fileExtn);
 
@@ -51,12 +53,20 @@ router.post('/submit', submitForApproval)
 
 router.get('/approvalStatus', approvalStatus)
 
+router.patch('/:course_id/media' , mixMulter.fields(
+    [
+        { name: 'thumbnail', maxCount: 1 },
+        { name: 'trailerVideo', maxCount: 1 }
+    ]
+), updateMedia)
 
 router.route('/:course_id')
     .get(getCourseDetail)
-    .patch(imageMulter.single('thumbnail'), updateCourseDetails)
+    .patch(updateCourseDetails)
+
     .delete(deleteCourse);
 //-------------------------------------
+
 
 
 

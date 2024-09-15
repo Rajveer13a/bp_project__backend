@@ -341,19 +341,76 @@ const updateSecitonTitle = tryCatch(
     }
 );
 
+// ------------------------------------
+
+const updateMedia = tryCatch(
+    async (req, res) => {
+        const { course_id } = req.params;
+
+        // Check for uploaded files
+        const thumbnailFile = req.files?.thumbnail ? req.files.thumbnail[0].path : undefined;
+        const trailerFile = req.files?.trailerVideo ? req.files.trailerVideo[0].path : undefined;
+
+        // Determine which file was uploaded
+        const file = thumbnailFile || trailerFile;
+        const fieldname = thumbnailFile ? 'thumbnail' : (trailerFile ? 'trailerVideo' : undefined);
+
+        if (!course_id || !file || !["trailerVideo", "thumbnail"].includes(fieldname)) {
+            return apiError(400, "All fields are required");
+        }
+
+        const course = await Course.findById(course_id);
+
+        if (!course) {
+            return apiError(400, "Course not found");
+        }
+
+        const type = fieldname === "trailerVideo" ? "video" : "image";
+
+        if (course[fieldname].public_id) {
+            const dest = await cloudinary.uploader.destroy(course[fieldname].public_id , {resource_type : type });
+                   
+            if (dest.result === "not found") {
+                return apiError(400, `Failed to delete previous ${fieldname}`);
+            }
+
+            
+        }
+        
+        
+        // Upload the new file to Cloudinary
+        const upload = await uploadCloudinary(file, type, thumbnailImgConfig);
+
+        if (!upload) {
+            return apiError(400, `Failed to upload new ${fieldname}`);
+        }
+
+        // Update the course with the new media file
+        course[fieldname] = {
+            public_id: upload.public_id,
+            secure_url: upload.secure_url
+        };
+
+        await course.save();
+
+        res.status(200).json(new apiResponse(`${fieldname} uploaded successfully`));
+    }
+);
+
+
 //-------------------------------------
 
 const updateCourseDetails = tryCatch(
     async (req, res) => {
 
-        const {description, title, subtitle, language, level, category  } = req.body;
+        const { description, title, subtitle, language, level, category } = req.body;
 
         const { course_id } = req.params;
         // console.log(description, title, subtitle, language, level, category)
 
-        if( [description, title, subtitle, language, level, category, course_id ].some(
-            (value) => value==undefined || value?.trim() ==""
-        )){
+        if ([description, title, subtitle, language, level, category, course_id].some(
+            (value) => value == undefined || value?.trim() == ""
+        )) {
             apiError(400, "all fields are required");
         }
 
@@ -382,15 +439,15 @@ const updateCourseDetails = tryCatch(
 
         if (!course) apiError(400, "course not found");
 
-        
 
-        const fieldObj = {description, title, subtitle, language, level, category  };
 
-        Object.keys(fieldObj).map((value)=>{
+        const fieldObj = { description, title, subtitle, language, level, category };
+
+        Object.keys(fieldObj).map((value) => {
             course[value] = fieldObj[value];
         })
-        
-        
+
+
 
         // if (thumbnail) {//change thumbnail
 
@@ -783,5 +840,6 @@ export {
     deleteCourse,
     getCourseDetail,
     submitForApproval,
-    approvalStatus
+    approvalStatus,
+    updateMedia
 };
