@@ -369,8 +369,7 @@ const updateMedia = tryCatch(
 
         if (course[fieldname].public_id) {
             const dest = await cloudinary.uploader.destroy(course[fieldname].public_id , {resource_type : type });
-                   
-            if (dest.result === "not found") {
+            if (dest.result === "not found" && dest.result!="not found") {
                 return apiError(400, `Failed to delete previous ${fieldname}`);
             }
 
