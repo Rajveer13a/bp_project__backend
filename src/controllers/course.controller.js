@@ -4,7 +4,7 @@ import Course from "../models/course.model.js";
 import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { cloudinary, uploadCloudinary } from "../utils/cloudinary.js";
-import { thumbnailImgConfig } from "../constants.js";
+import { priceList, thumbnailImgConfig } from "../constants.js";
 import Section from "../models/courseSection.model.js";
 import Lecture from "../models/sectionLecture.model.js";
 import mongoose from "mongoose";
@@ -488,6 +488,47 @@ const updateCourseDetails = tryCatch(
     }
 )
 
+// -----------------------------------
+
+const updateCoursePrice  = tryCatch(
+    async(req, res)=>{
+        
+        const {profileCompleted} = req.instructor;
+
+        if(!profileCompleted) apiError(400, "complete premium profile");
+
+        const { course_id }  =req.params;
+
+        const { price} = req.body;
+
+        if(course_id==undefined || course_id.trim()==""){
+            apiError(400,"course id not given");
+        }
+
+        if(price == undefined || !priceList.includes(price)){
+            apiError(400,"invalid price value given");
+        }
+
+        const course  = await Course.findOneAndUpdate(
+            {
+                _id: course_id,
+                instructor_id: req.instructor._id,
+            },{
+                $set:{
+                    price
+                }
+            }
+        );
+
+        if(course) apiError(400,"failed to update price");
+
+        res.status(200).json(
+            new apiResponse("price updated successfully")
+        );
+
+    }
+)
+
 //-------------------------------------
 
 const deleteLecture = tryCatch(
@@ -840,5 +881,6 @@ export {
     getCourseDetail,
     submitForApproval,
     approvalStatus,
-    updateMedia
+    updateMedia,
+    updateCoursePrice
 };

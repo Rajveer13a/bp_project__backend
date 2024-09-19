@@ -41,3 +41,17 @@ export const ourComission = 2 / 100 ; //2 percent
 export const mintranferAmount = 10000 ; 
 
 export const payrollDate = [1,2,3,23] ; //payrolls execution date
+
+
+export const priceList = [0,// Free
+    799,
+    1199,
+    1499,
+    1699,
+    1799,
+    1999,
+    2299,
+    2499,
+    2699,
+    2799,
+    2899]; //allowed course prices

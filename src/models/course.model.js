@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import { priceList } from "../constants.js";
+
 
 const courseSchema = new Schema({
     instructor_id: {
@@ -88,6 +90,7 @@ const courseSchema = new Schema({
     price: {
         type: Number,
         // required:true
+        enum: priceList
     },
     description: {
         type: String,

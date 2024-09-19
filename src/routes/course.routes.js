@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addLecturetitle, addVideoToLecture, addfileTOLecture, approvalStatus, createCourse, createSection, deleteCourse, deleteLecture, deleteSection, getCourseDetail, submitForApproval, updateCourseDetails, updateLectureTitle, updateMedia, updateSecitonTitle } from "../controllers/course.controller.js";
+import { addLecturetitle, addVideoToLecture, addfileTOLecture, approvalStatus, createCourse, createSection, deleteCourse, deleteLecture, deleteSection, getCourseDetail, submitForApproval, updateCourseDetails, updateCoursePrice, updateLectureTitle, updateMedia, updateSecitonTitle } from "../controllers/course.controller.js";
 import { authorizedroles, isLoggedIn } from "../middlewares/auth.middleware.js";
 import multerfunc from "../middlewares/multer.middleware.js";
 import { fileExtn, fileSize, imageExtn, imageSize, videoExtn, videoSize } from "../constants.js";
@@ -59,6 +59,8 @@ router.patch('/:course_id/media' , mixMulter.fields(
         { name: 'trailerVideo', maxCount: 1 }
     ]
 ), updateMedia)
+
+router.patch('/:course_id/price' ,updateCoursePrice);
 
 router.route('/:course_id')
     .get(getCourseDetail)
