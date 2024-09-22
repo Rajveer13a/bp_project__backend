@@ -14,8 +14,8 @@ export const imageExtn = [".jpg", ".png"] //extensions to be allowed
 export const profileImgConfig = {
     resource_type:"image",
     folder: 'udemy/udemy-profile',
-    width: 250,
-    height: 250,
+    width: 512,
+    height: 512,
     gravity: 'faces',
     crop: 'fill'
 }; //for cloudinary

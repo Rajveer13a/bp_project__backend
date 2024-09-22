@@ -100,8 +100,38 @@ const getInstructorDetails =tryCatch(
 
 //-------------------------------------
 
+const updateInstructorDetails = tryCatch(
+    async(req, res)=>{
+        const {bio, headline} =req.body;
+        
+        if( [bio,headline].some(value=> value==undefined || value?.trim=="")){
+            
+            apiError(400,"required fields are not given");
+        }
+
+        const instructor = await Instructor.findOneAndUpdate(
+            req.instructor._id,
+            {
+                $set:{
+                    bio,
+                    headline
+                }
+            }
+        );
+
+        if(!instructor) apiError(400,"failed to update");
+
+        res.status(200).json(
+            new apiResponse("updated succesfully")
+        );
+
+        
+    }
+)
+
 export {
     createInstructor,
-    getInstructorDetails
+    getInstructorDetails,
+    updateInstructorDetails
 
 }
