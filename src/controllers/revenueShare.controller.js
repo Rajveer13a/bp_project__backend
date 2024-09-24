@@ -76,6 +76,31 @@ const addBankAccount = tryCatch(
     }
 );
 
+const getBankAccount = tryCatch(
+    async(req, res)=>{
+        const customer = await Customer.findOne({
+            instructor_id : req.instructor._id
+        });
+
+        if(!customer){
+            apiError(400,"account don't exist");
+        }
+
+        const account = await Account.findOne({
+            customer_id:customer.customer_id
+        });
+
+        if(!account){
+            apiError(400,"account don't exist");
+        }
+
+        res.status(200).json(
+            new apiResponse("success",account.bank_account)
+        )
+
+    }
+)
+
 
 // ---------------------------
 // automated Payrolls functionality
@@ -148,5 +173,6 @@ setInterval(async () => {
 
 
 export {
-    addBankAccount
+    addBankAccount,
+    getBankAccount
 }
