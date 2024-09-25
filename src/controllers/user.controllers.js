@@ -13,6 +13,7 @@ import {uploadCloudinary, cloudinary} from "../utils/cloudinary.js";
 import UserConfig from "../models/user.config.js";
 import mongoose from "mongoose";
 import Course from "../models/course.model.js";
+import Instructor from "../models/instructor.model.js";
 
 const cookieOptions = {
     httpOnly: false,
@@ -499,6 +500,15 @@ const updateUserAvatarImage = tryCatch(
                 new:true
             }
         ).select("-forgotPasswordToken");
+
+        await Instructor.findOneAndUpdate({
+            user_id : user._id,
+            'profileCompleted.status' : false
+        },{
+            $set:{
+                'profileCompleted.step' : 3
+            }
+        })
 
         res.status(200).json(
             new apiResponse("avatar image updated successfully",user)

@@ -85,7 +85,7 @@ const courseSchema = new Schema({
             "photography-video",
             "health-fitness",
             "teaching-academics"
-          ]
+        ]
     },
     price: {
         type: Number,
@@ -97,6 +97,20 @@ const courseSchema = new Schema({
         // required:true,
         minlength: [200, "description needs to be more than 200 words"],
         maxlength: [600, "description needs to be less than 600 words"]
+    },
+    goals: {
+        objectives: {
+            type : [String],
+            default: ["","","",""]
+        },
+        prerequisites: {
+            type : [String],
+            default:[""]
+        },
+        intended_learners: {
+            type : [String],
+            default:[""]
+        }
     },
     approved: {
         type: Boolean,

@@ -10,6 +10,7 @@ import Lecture from "../models/sectionLecture.model.js";
 import mongoose from "mongoose";
 import Review from "../models/courseReview.model.js";
 
+
 async function addNewResourceToLecture(req, type) {
     const instructor = req.instructor;
 
@@ -495,7 +496,7 @@ const updateCoursePrice  = tryCatch(
         
         const {profileCompleted} = req.instructor;
 
-        if(!profileCompleted) apiError(400, "complete premium profile");
+        if(!profileCompleted.status) apiError(400, "complete premium profile");
 
         const { course_id }  =req.params;
 
@@ -505,6 +506,8 @@ const updateCoursePrice  = tryCatch(
             apiError(400,"course id not given");
         }
 
+        
+        
         if(price == undefined || !priceList.includes(price)){
             apiError(400,"invalid price value given");
         }
@@ -520,7 +523,7 @@ const updateCoursePrice  = tryCatch(
             }
         );
 
-        if(course) apiError(400,"failed to update price");
+        if(!course) apiError(400,"failed to update price");
 
         res.status(200).json(
             new apiResponse("price updated successfully")
@@ -863,6 +866,39 @@ const approvalStatus = tryCatch(
     }
 )
 
+const updateGoals = tryCatch(
+    async(req, res)=>{
+
+        const {objectives,prerequisites ,intended_learners}  = req.body;
+
+        const {course_id} = req.params;
+        
+        if(!course_id || course_id.trim() == "") apiError(400,"course id not given");
+
+        const course = await Course.findOneAndUpdate(
+            {
+                instructor_id : req.instructor._id,
+                _id: course_id
+            },
+            {
+                $set:{
+                    goals:{objectives,prerequisites ,intended_learners}
+                }
+            },{
+                new:true
+            }
+        );
+
+        if(!course) apiError(400,"failed to update");
+
+        res.status(200).json(
+            new apiResponse("updated successfully")
+        )
+
+
+    }
+)
+
 
 
 //-------------------------------------
@@ -882,5 +918,6 @@ export {
     submitForApproval,
     approvalStatus,
     updateMedia,
-    updateCoursePrice
+    updateCoursePrice,
+    updateGoals
 };

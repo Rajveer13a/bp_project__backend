@@ -1,4 +1,5 @@
 import { mintranferAmount, ourComission, payrollDate } from "../constants.js";
+import Instructor from "../models/instructor.model.js";
 import { Account, Customer } from "../models/Payout/bankAccount.model.js";
 import { razorpay } from "../server.js";
 import apiError from "../utils/apiError.js";
@@ -68,6 +69,17 @@ const addBankAccount = tryCatch(
         });
 
         if (!account) apiError(400, "failed to add account");
+
+        await Instructor.findByIdAndUpdate(
+            req.instructor._id,
+            {
+                profileCompleted: {
+                    status : true,
+                    step  : 5
+                }
+
+            }
+        )
 
         res.status(200).json(
             new apiResponse("bank account added succesfully", fund.bank_account)

@@ -116,10 +116,18 @@ const updateInstructorDetails = tryCatch(
                     bio,
                     headline
                 }
+            },{
+                new:true
             }
         );
 
         if(!instructor) apiError(400,"failed to update");
+
+        if(!instructor.profileCompleted.status){
+            instructor.profileCompleted.step  =2;
+
+            await instructor.save()
+        }
 
         res.status(200).json(
             new apiResponse("updated succesfully")
@@ -128,6 +136,8 @@ const updateInstructorDetails = tryCatch(
         
     }
 )
+
+
 
 export {
     createInstructor,
