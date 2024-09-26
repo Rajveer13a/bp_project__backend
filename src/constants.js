@@ -43,7 +43,7 @@ export const mintranferAmount = 10000 ;
 export const payrollDate = [1,2,3,23] ; //payrolls execution date
 
 
-export const priceList = [0,// Free
+export const priceList = [// Free
     799,
     1199,
     1499,

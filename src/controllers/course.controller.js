@@ -618,6 +618,14 @@ const deleteSection = tryCatch(
             apiError(400, "failed to delete lecture");
         };
 
+        const course = await Course.findById(
+            section.course_id
+        )
+
+        course.sections = course.sections.filter( (id)=> id!=section_id );
+        
+        await course.save();
+
         res.status(200).json(
             new apiResponse("section deleted successfully", { _id: section_id })
         )

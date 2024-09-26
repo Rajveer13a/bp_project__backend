@@ -21,7 +21,7 @@ const courseSchema = new Schema({
     },
     subtitle: {
         type: String,
-        required: true,
+        // required: true,
         minlength: [5, "subtitle needs to be moder than 5 words"],
         maxlength: [100, "title needs to be less than 100 words"]
     },
