@@ -142,7 +142,7 @@ const reviewLecture = tryCatch(
 const reviewing = tryCatch(
     async(req, res)=>{
 
-        const { feedback, flag, course_id } = req.body;
+        const { feedback, flag, course_id,  message } = req.body;
 
         if( [flag, course_id].some(
             value => value === undefined ||
@@ -159,7 +159,15 @@ const reviewing = tryCatch(
                     feedback:feedback && feedback,
                     reviewed:true,
                     approved: flag,
-                    reviewedBy: req.user._id
+                    reviewedBy: req.user._id,
+                    landing: {
+                        flag: message?.landing?.flag,
+                        value: message?.landing?.value
+                    },
+                    intended: {
+                        flag: message?.intended?.flag,
+                        value: message?.intended?.value
+                    },
                 }
             },
             {

@@ -6,36 +6,50 @@ const reviewSchema = new Schema(
             type: Schema.Types.ObjectId,
             required: true
         },
-        
+
         user_id: {
             type: Schema.Types.ObjectId,
+        },
+        landing: {
+            flag: {
+                type: Boolean,
+                default: null
+            },
+            value: String
+        },
+        intended: {
+            flag: {
+                type: Boolean,
+                default: null
+            },
+            value: String
         },
 
         instructorName: {
             type: String,
             required: true
-        },        
+        },
 
-        reviewed:{
+        reviewed: {
             type: Boolean,
             require: true,
             default: false
         },
 
-        reviewedBy:{
+        reviewedBy: {
             type: Schema.Types.ObjectId
         },
 
-        feedback:{
+        feedback: {
             type: Object
         },
 
-        approved:{
+        approved: {
             type: Boolean
         }
     }
 );
 
-const Review = mongoose.model("Review",reviewSchema);
+const Review = mongoose.model("Review", reviewSchema);
 
 export default Review;
