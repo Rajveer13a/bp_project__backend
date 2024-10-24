@@ -64,6 +64,9 @@ async function addNewResourceToLecture(req, type) {
 
     lecture.type = type;
 
+    lecture.approved = false;
+    lecture.feedback = null;
+
     await lecture.save();
 
     return lecture;
@@ -393,6 +396,15 @@ const updateMedia = tryCatch(
 
         await course.save();
 
+        const review = await Review.findOneAndUpdate(
+            {course_id: course_id},
+            {
+                $set:{
+                    landing: null
+                }
+            }
+        )
+
         res.status(200).json(new apiResponse(`${fieldname} uploaded successfully`));
     }
 );
@@ -479,6 +491,15 @@ const updateCourseDetails = tryCatch(
         // );
 
         await course.save();
+
+        const review = await Review.findOneAndUpdate(
+            {course_id: course_id},
+            {
+                $set:{
+                    landing: null
+                }
+            }
+        )
 
         res.status(200).json(
             new apiResponse("course updated succesfully", course)
@@ -839,7 +860,7 @@ const submitForApproval = tryCatch(
 const approvalStatus = tryCatch(
     async (req, res) => {
 
-        const { course_id } = req.body;
+        const { course_id } = req.params;
 
         if (course_id === undefined || course_id.trim() === "") {
             apiError(400, "course id not given");
@@ -864,7 +885,9 @@ const approvalStatus = tryCatch(
                 {
                     reviewed: approvalStatus.reviewed,
                     feedback: approvalStatus?.feedback,
-                    approvalStatus: approvalStatus?.approved
+                    approvalStatus: approvalStatus?.approved,
+                    landing: approvalStatus?.landing,
+                    intended: approvalStatus?.intended
                 }
             )
         );
@@ -898,6 +921,15 @@ const updateGoals = tryCatch(
         );
 
         if(!course) apiError(400,"failed to update");
+
+        const review = await Review.findOneAndUpdate(
+            {course_id: course_id},
+            {
+                $set:{
+                    intended: null
+                }
+            }
+        )
 
         res.status(200).json(
             new apiResponse("updated successfully")

@@ -51,7 +51,7 @@ router.route('/section/:section_id')
 
 router.post('/submit', submitForApproval)
 
-router.get('/approvalStatus', approvalStatus)
+router.get('/:course_id/approvalStatus', approvalStatus)
 
 router.patch('/:course_id/media' , mixMulter.fields(
     [

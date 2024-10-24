@@ -61,12 +61,12 @@ const getInstructorDetails =tryCatch(
 
         let instructor = await Instructor.aggregate([
             {
-                $match:{
-                    user_id:user._id
+                $match: {
+                    user_id: user._id
                 }
             },
             {
-                $lookup:{
+                $lookup: {
                     from: "courses",
                     localField: "_id",
                     foreignField: "instructor_id",
@@ -74,14 +74,39 @@ const getInstructorDetails =tryCatch(
                 }
             },
             {
-                $project:{
+                $unwind: "$courses"
+            },
+            {
+                $lookup: {
+                    from: "reviews",
+                    localField: "courses._id",
+                    foreignField: "course_id",
+                    as: "courses.reviews"
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id",
+                    courses: { $push: "$courses" },
+                    user_id: { $first: "$user_id" }
+                }
+            },
+            {
+                $project: {
                     "courses.instructor_id": 0,
                     "courses.__v": 0,
+                    "courses.reviews.__v": 0,
+                    "courses.reviews.reviewedBy": 0,
+                    "courses.reviews.landing": 0,
+                    "courses.reviews.intended": 0,
+                    "courses.reviews.feeback": 0,
+                    "courses.reviews._id": 0,
                     "__v": 0,
-                    "user_id":0
+                    "user_id": 0
                 }
             }
         ]);
+        
 
         if(!instructor[0]) apiError(400,"instuctor not found");
 
