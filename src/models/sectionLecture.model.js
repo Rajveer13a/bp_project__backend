@@ -5,8 +5,8 @@ const lectureSchema = new Schema({
         type:String,
         required:true,
         trim:true,
-        minlength:[14,"title should be greater than 14 words"],
-        maxlength:[30,"title should be less than 30 words"],
+        minlength:[5,"title should be greater than 14 words"],
+        maxlength:[80,"title should be less than 80 words"],
     },
     instructor_id:{
         type:Schema.Types.ObjectId,

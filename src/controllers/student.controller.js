@@ -1,4 +1,6 @@
 import Course from "../models/course.model.js";
+import Rating from "../models/Rating.model.js";
+import StudentProgress from "../models/studentProgress.model.js";
 import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import tryCatch from "../utils/tryCatch.js";
@@ -14,6 +16,11 @@ const approvedCourses = tryCatch(
         // )
 
         const courses = await Course.aggregate([
+            {
+                $match: {
+                    approved: true
+                }
+            },
             {
                 $lookup: {
                     from: "instructors",
@@ -47,8 +54,8 @@ const approvedCourses = tryCatch(
 
         if (!courses) apiError(400, "failed to fetch courses");
 
-        
-        
+
+
 
         res.status(200).json(
             new apiResponse("courses fetched succesfully", courses)
@@ -61,7 +68,7 @@ const courseById = tryCatch(
     async (req, res) => {
 
         const { course_id } = req.query;
-        
+
 
         // const userCourses = req.user.purchasedCourses;
 
@@ -112,7 +119,7 @@ const courseById = tryCatch(
                                 // user : {
                                 //     profileImage : 1
                                 // }
-                                
+
                             }
                         }
                     ]
@@ -149,11 +156,13 @@ const courseById = tryCatch(
                                             section_id: false,
                                             __v: false,
                                             approved: false,
+                                            // resource: false
                                         }
                                     },
                                     {
                                         $addFields: {
-                                            resource: { $cond: { if: { $eq: [resourceFlag, false] }, then: "$$REMOVE", else: "$resource" } }
+                                            resource: { $cond: { if: { $eq: [resourceFlag, false] }, then: "$$REMOVE", else: "$resource" } },
+                                            duration: "$resource.duration"
                                         }
                                     }
                                 ]
@@ -192,13 +201,13 @@ const courseById = tryCatch(
 
 
 const learning = tryCatch(
-    async( req, res )=>{
+    async (req, res) => {
 
-        const courseList = req.user.purchasedCourses.map((value)=> new mongoose.Types.ObjectId(value)) ;
-        
+        const courseList = req.user.purchasedCourses.map((value) => new mongoose.Types.ObjectId(value));
+
         const courses = await Course.aggregate([
             {
-                $match:{
+                $match: {
                     _id: { $in: courseList }
                 }
             },
@@ -233,12 +242,12 @@ const learning = tryCatch(
             }
         ]);
 
-        if(!courses) apiError("failed to get courses");
+        if (!courses) apiError("failed to get courses");
 
         res.status(200).json(
             new apiResponse("your course list fetched successfully", courses)
         )
-        
+
     }
 );
 
@@ -246,7 +255,6 @@ const learnLecture = tryCatch(
     async (req, res) => {
 
         const { course_id } = req.query;
-        
 
         const userCourses = req.user.purchasedCourses;
 
@@ -255,10 +263,9 @@ const learnLecture = tryCatch(
         };
 
         if (!userCourses.includes(course_id)) {
-            apiError(400,"course not purchased");
+            apiError(400, "course not purchased");
         };
 
-        
 
         const course = await Course.aggregate([
             {
@@ -297,7 +304,7 @@ const learnLecture = tryCatch(
                                 // user : {
                                 //     profileImage : 1
                                 // }
-                                
+
                             }
                         }
                     ]
@@ -336,8 +343,8 @@ const learnLecture = tryCatch(
                                             approved: false,
                                         }
                                     },
-                                    
-                                    
+
+
                                 ]
                             }
                         }
@@ -358,10 +365,21 @@ const learnLecture = tryCatch(
             }
         ]);
 
-
         if (course.length === 0) {
             apiError(400, " no course found");
         };
+
+        const progress = await StudentProgress.findOne({
+            course_id,
+            user_id: req.user._id
+        })
+
+        if(progress) {
+            course[0].progress = {
+                completed: progress?.completed,
+                lastView: progress?.lastView
+            }
+        }
 
         res.status(200).json(
             new apiResponse("course fetched successfully", course[0])
@@ -372,9 +390,139 @@ const learnLecture = tryCatch(
     }
 );
 
+const rateCourse = tryCatch(
+    async (req, res) => {
+
+        const { course_id, rating, comment } = req.body;
+        
+        if ([course_id, rating].some((value) => value === undefined || value?.trim === "")) {
+            apiError(400, " all fields are not given ");
+        }
+
+        if (!req.user.purchasedCourses.includes(course_id)) {
+            apiError(400, "not allowed");
+        }
+
+        const exist = await Rating.findOne({
+            user_id:req.user._id,
+            course_id
+        })
+
+        let result;
+
+        if(exist){
+
+            exist.rating = rating;
+            exist.comment = comment;
+            result = await exist.save();
+
+        }else{
+
+            result = await Rating.create({
+                course_id,
+                rating,
+                course_id,
+                user_id: req.user._id,
+                comment
+            });
+
+        }
+
+
+        if (!result) apiError(400, " failed to submit rating");
+
+        res.status(200).json(
+            new apiResponse("Rating submitted succesfully", result)
+        )
+    }
+)
+
+const createProgressConfig = tryCatch(
+    async (req, res) => {
+
+        const { course_id, schema} = req.body;
+        
+        if ([course_id, schema].some((value) => value === undefined || value?.trim === "")) {
+            apiError(400, " all fields are not given ");
+        }
+
+        const isArrayOfNumbers = Array.isArray(schema) && schema.every(item => typeof item === 'number');
+
+        if(!isArrayOfNumbers) apiError(400, "unexpected data");
+
+        if (!req.user.purchasedCourses.includes(course_id)) {
+            apiError(400, "not allowed");
+        }
+
+        const completed =  schema.map( (lec) => new Array(lec).fill(false) );
+
+        let progress = await StudentProgress.findOne({
+            course_id,
+            user_id : req.user._id
+        })
+
+        if(progress){
+            apiError(400,"config already exist")
+        }
+
+        progress = await StudentProgress.create({
+            course_id,
+            user_id : req.user._id,
+            completed
+        })
+
+        res.status(200).json(
+            new apiResponse("created successfully", progress)
+        )
+
+    }
+)
+
+const markLecture = tryCatch(
+    async (req, res) => {
+
+        const { course_id, flag, location} = req.body;
+        
+        if ([course_id, flag, location].some((value) => value === undefined || value?.trim === "")) {
+            apiError(400, " all fields are not given ");
+        }
+
+        if (!req.user.purchasedCourses.includes(course_id)) {
+            apiError(400, "not allowed");
+        }
+
+        let progress = await StudentProgress.findOneAndUpdate(
+            {
+                course_id,
+                user_id : req.user._id
+            },{
+                $set:{
+                    [`completed.${location[0]}.${location[1]}`]: flag
+                }
+            },
+            {
+                new: true
+            }
+        )
+
+        if(!progress){
+            apiError(400,"failed to update")
+        }
+
+        res.status(200).json(
+            new apiResponse("updated successfully", progress)
+        )
+
+    }
+)
+
 export {
     approvedCourses,
     courseById,
     learning,
-    learnLecture
+    learnLecture,
+    rateCourse,
+    createProgressConfig,
+    markLecture
+
 };

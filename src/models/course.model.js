@@ -23,7 +23,7 @@ const courseSchema = new Schema({
         type: String,
         // required: true,
         minlength: [5, "subtitle needs to be moder than 5 words"],
-        maxlength: [100, "title needs to be less than 100 words"]
+        maxlength: [500, "title needs to be less than 500 words"]
     },
     language: {
         type: String,
@@ -96,7 +96,7 @@ const courseSchema = new Schema({
         type: String,
         // required:true,
         minlength: [200, "description needs to be more than 200 words"],
-        maxlength: [600, "description needs to be less than 600 words"]
+        maxlength: [10000, "description needs to be less than 10000 words"]
     },
     goals: {
         objectives: {
