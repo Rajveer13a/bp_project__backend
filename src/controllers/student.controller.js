@@ -1,4 +1,5 @@
 import Course from "../models/course.model.js";
+import Payment from "../models/payment.model.js";
 import Rating from "../models/Rating.model.js";
 import StudentProgress from "../models/studentProgress.model.js";
 import apiError from "../utils/apiError.js";
@@ -374,12 +375,28 @@ const learnLecture = tryCatch(
             user_id: req.user._id
         })
 
-        if(progress) {
+        if (progress) {
             course[0].progress = {
                 completed: progress?.completed,
                 lastView: progress?.lastView
             }
         }
+
+        const userRating = await Rating.findOne({
+            user_id: req.user._id,
+            course_id
+        })
+
+        if (userRating) {
+            course[0].userRating = { comment: userRating.comment, rating: userRating.rating }
+        }
+
+        const totalStudents = await Payment.countDocuments({
+            paid: true,
+            course_ids: { $in: course_id }
+        })
+
+        course[0].totalStudents = totalStudents;
 
         res.status(200).json(
             new apiResponse("course fetched successfully", course[0])
@@ -394,7 +411,7 @@ const rateCourse = tryCatch(
     async (req, res) => {
 
         const { course_id, rating, comment } = req.body;
-        
+
         if ([course_id, rating].some((value) => value === undefined || value?.trim === "")) {
             apiError(400, " all fields are not given ");
         }
@@ -404,19 +421,19 @@ const rateCourse = tryCatch(
         }
 
         const exist = await Rating.findOne({
-            user_id:req.user._id,
+            user_id: req.user._id,
             course_id
         })
 
         let result;
 
-        if(exist){
+        if (exist) {
 
             exist.rating = rating;
             exist.comment = comment;
             result = await exist.save();
 
-        }else{
+        } else {
 
             result = await Rating.create({
                 course_id,
@@ -440,34 +457,34 @@ const rateCourse = tryCatch(
 const createProgressConfig = tryCatch(
     async (req, res) => {
 
-        const { course_id, schema} = req.body;
-        
+        const { course_id, schema } = req.body;
+
         if ([course_id, schema].some((value) => value === undefined || value?.trim === "")) {
             apiError(400, " all fields are not given ");
         }
 
         const isArrayOfNumbers = Array.isArray(schema) && schema.every(item => typeof item === 'number');
 
-        if(!isArrayOfNumbers) apiError(400, "unexpected data");
+        if (!isArrayOfNumbers) apiError(400, "unexpected data");
 
         if (!req.user.purchasedCourses.includes(course_id)) {
             apiError(400, "not allowed");
         }
 
-        const completed =  schema.map( (lec) => new Array(lec).fill(false) );
+        const completed = schema.map((lec) => new Array(lec).fill(false));
 
         let progress = await StudentProgress.findOne({
             course_id,
-            user_id : req.user._id
+            user_id: req.user._id
         })
 
-        if(progress){
-            apiError(400,"config already exist")
+        if (progress) {
+            apiError(400, "config already exist")
         }
 
         progress = await StudentProgress.create({
             course_id,
-            user_id : req.user._id,
+            user_id: req.user._id,
             completed
         })
 
@@ -481,8 +498,8 @@ const createProgressConfig = tryCatch(
 const markLecture = tryCatch(
     async (req, res) => {
 
-        const { course_id, flag, location} = req.body;
-        
+        const { course_id, flag, location } = req.body;
+
         if ([course_id, flag, location].some((value) => value === undefined || value?.trim === "")) {
             apiError(400, " all fields are not given ");
         }
@@ -494,19 +511,19 @@ const markLecture = tryCatch(
         let progress = await StudentProgress.findOneAndUpdate(
             {
                 course_id,
-                user_id : req.user._id
-            },{
-                $set:{
-                    [`completed.${location[0]}.${location[1]}`]: flag
-                }
-            },
+                user_id: req.user._id
+            }, {
+            $set: {
+                [`completed.${location[0]}.${location[1]}`]: flag
+            }
+        },
             {
                 new: true
             }
         )
 
-        if(!progress){
-            apiError(400,"failed to update")
+        if (!progress) {
+            apiError(400, "failed to update")
         }
 
         res.status(200).json(
@@ -516,6 +533,111 @@ const markLecture = tryCatch(
     }
 )
 
+const lastViewed = tryCatch(
+    async (req, res) => {
+
+        const { section_no, lecture_no, course_id } = req.body;
+
+        if ([section_no, lecture_no, course_id].some((value) => value === undefined || value?.trim === "")) {
+
+            apiError(400, "all fields are required");
+        }
+
+        if (!req.user.purchasedCourses.includes(course_id)) {
+            apiError(400, "not allowed");
+        }
+
+        const result = await StudentProgress.updateOne({
+            course_id,
+            user_id: req?.user?._id
+        }, { $set: { lastView: { section_no, lecture_no } } });
+
+        if (!result) apiError(400, "something went wrong");
+
+        res.status(200).json(
+            new apiResponse("last viewed successfully")
+        )
+
+    }
+)
+
+const deleteRating = tryCatch(
+    async (req, res) => {
+
+        const { course_id } = req.params;
+
+        if ([course_id].some((value) => value === undefined || value?.trim === "")) {
+            apiError(400, " all fields are not given ");
+        }
+
+        if (!req.user.purchasedCourses.includes(course_id)) {
+            apiError(400, "not allowed");
+        }
+
+        const exist = await Rating.findOneAndDelete({
+            user_id: req.user._id,
+            course_id
+        })
+
+        if (!exist) apiError(400, "rating does not exist");
+
+        res.status(200).json(
+            new apiResponse("Rating deleted succesfully")
+        )
+    }
+)
+
+const getRatings = tryCatch(
+    async (req, res) => {
+        const { course_id } = req.params;
+
+        if (!course_id || course_id.trim === "") apiError(400, "course id not given");
+
+        // const ratings = await Rating.find({
+        //     course_id
+        // });
+
+        const ratings = await Rating.aggregate([
+            {
+                $match: {
+                    course_id: new mongoose.Types.ObjectId(course_id),
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user_id",
+                    foreignField: "_id",
+                    as: "user",
+                },
+            },
+            {
+                $unwind: {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $project: {
+                    profileImage: "$user.profileImage",
+                    username: "$user.username",
+                    updatedAt: 1,
+                    rating: 1,
+                    comment: 1,
+                },
+            },
+        ]);
+        
+
+        if (!ratings) apiError(400, "no rating for this course exists");
+
+        res.status(200).json(
+            new apiResponse("succesfully feteched all ratings for the course", ratings)
+        )
+    }
+
+)
+
 export {
     approvedCourses,
     courseById,
@@ -523,6 +645,9 @@ export {
     learnLecture,
     rateCourse,
     createProgressConfig,
-    markLecture
+    markLecture,
+    lastViewed,
+    deleteRating,
+    getRatings
 
 };

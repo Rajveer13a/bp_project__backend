@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { approvedCourses, courseById, createProgressConfig, learnLecture, learning, markLecture, rateCourse } from "../controllers/student.controller.js";
+import { approvedCourses, courseById, createProgressConfig, deleteRating, getRatings, lastViewed, learnLecture, learning, markLecture, rateCourse } from "../controllers/student.controller.js";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -18,8 +18,14 @@ router.get("/learnLecture", isLoggedIn(), learnLecture);
 
 router.post("/rateCourse", isLoggedIn(), rateCourse);
 
+router.get("/courseRatings/:course_id", isLoggedIn(), getRatings);
+
+router.delete("/deleteRating/:course_id", isLoggedIn(), deleteRating);
+
 router.post("/createProgressConfig", isLoggedIn(), createProgressConfig);
 
 router.post("/markLecture", isLoggedIn(), markLecture);
+
+router.post("/setLastViewed", isLoggedIn(), lastViewed);
 
 export default router;
