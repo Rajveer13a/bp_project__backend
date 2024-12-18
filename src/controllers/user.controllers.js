@@ -9,7 +9,7 @@ import { profileImgConfig, randomByteSize } from "../constants.js";
 import jwt from "jsonwebtoken";
 import { type } from "os";
 import { log } from "console";
-import {uploadCloudinary, cloudinary} from "../utils/cloudinary.js";
+import { uploadCloudinary, cloudinary } from "../utils/cloudinary.js";
 import UserConfig from "../models/user.config.js";
 import mongoose from "mongoose";
 import Course from "../models/course.model.js";
@@ -102,7 +102,7 @@ const emailVerificationToken = tryCatch(
                 //     `verifiaction mail send to ${user.email}, if u still can't find it please try after ${tokenexpiry} `
                 // )
                 res.status(500).json(
-                    new apiResponse(`try after cooldown ${tokenexpiry}`, { tokenexpiry } , false)
+                    new apiResponse(`try after cooldown ${tokenexpiry}`, { tokenexpiry }, false)
                 )
                 return
             };
@@ -240,10 +240,16 @@ const loginUser = tryCatch(
 
 const getProfile = tryCatch(
     async (req, res) => {
-        const user = req.user.toObject()
+        let user = req.user.toObject()
 
         delete user.emailVerificationToken;
         delete user.forgotPasswordToken;
+
+        const instructorProfile = await Instructor.findOne({
+            user_id: user._id
+        })
+
+        if (instructorProfile) user = { ...user, ...instructorProfile._doc };
 
         res.status(200).json(
             new apiResponse("user data fetched", user)
@@ -326,8 +332,8 @@ const changePassword = tryCatch(
             apiError(400, "old passwod and new password both required");
         }
 
-        if(oldPassword===newPassword){
-            apiError(400,"oldpassword and new password both are same!")
+        if (oldPassword === newPassword) {
+            apiError(400, "oldpassword and new password both are same!")
         }
 
         const user = await User.findById(req.user._id).select("+password");
@@ -358,25 +364,25 @@ const changePassword = tryCatch(
 //___________________________________
 
 const forgotPassword = tryCatch(
-    async (req, res)=>{
+    async (req, res) => {
 
-        const {email} = req.body;
+        const { email } = req.body;
 
-        if(email ==="" || email===undefined){
-            apiError(400,"email not provided correctly")
+        if (email === "" || email === undefined) {
+            apiError(400, "email not provided correctly")
         }
 
-        const user = await User.findOne({email});
+        const user = await User.findOne({ email });
 
-        if(!user) apiError(400, "user not found");
+        if (!user) apiError(400, "user not found");
 
         const forgotPasswordToken = user.forgotPasswordToken;
 
-        if( forgotPasswordToken?.expiry > Date.now() ){
-            
-            const{expiry, token, emailLimit} = forgotPasswordToken;
+        if (forgotPasswordToken?.expiry > Date.now()) {
 
-            if(emailLimit===0){//rate limit exceeds
+            const { expiry, token, emailLimit } = forgotPasswordToken;
+
+            if (emailLimit === 0) {//rate limit exceeds
                 apiError(
                     400,
                     `token send too many times ,retry after ${expiry}`
@@ -385,7 +391,7 @@ const forgotPassword = tryCatch(
             //rate limit not exceeds
             const ForgotPasswordToken = user.generateForgotPasswordToken(false);
 
-            await sendForgotPasswordMail(email,forgotPasswordToken.token);
+            await sendForgotPasswordMail(email, forgotPasswordToken.token);
 
             await user.save();
 
@@ -396,19 +402,19 @@ const forgotPassword = tryCatch(
             );
 
             return;
-            
+
         };
 
         const forgotPasstoken = await user.generateForgotPasswordToken(true);
 
-        await sendForgotPasswordMail(email,forgotPasstoken);
+        await sendForgotPasswordMail(email, forgotPasstoken);
 
         await user.save();
 
         res.status(200).json(
-           new apiResponse(`forgot password link send successfully ${email}`)
+            new apiResponse(`forgot password link send successfully ${email}`)
         );
-        
+
         return;
 
     }
@@ -417,34 +423,34 @@ const forgotPassword = tryCatch(
 //___________________________________
 
 const resetPassword = tryCatch(
-    async(req,res)=>{
+    async (req, res) => {
 
-        const {token} = req.params;
+        const { token } = req.params;
 
-        const {newPassword} = req.body;
+        const { newPassword } = req.body;
 
-        if(
+        if (
             [token, newPassword].some(
-                (value)=>( value?.trim()==="" ||
-                        value===undefined )
+                (value) => (value?.trim() === "" ||
+                    value === undefined)
             )
-        ){
+        ) {
 
-            apiError(400,"newpassword or token is not send properly");
+            apiError(400, "newpassword or token is not send properly");
         };
 
         const hashedToken = crypto
-                            .createHash('sha256')
-                            .update(token)
-                            .digest('hex');
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
 
-                                
+
         const user = await User.findOne({
-            "forgotPasswordToken.token":hashedToken,
-            "forgotPasswordToken.expiry":{$gt:Date.now()}
+            "forgotPasswordToken.token": hashedToken,
+            "forgotPasswordToken.expiry": { $gt: Date.now() }
         });
 
-        if(!user) apiError(400,"token invalid or expired");
+        if (!user) apiError(400, "token invalid or expired");
 
         user.password = newPassword;
 
@@ -466,55 +472,55 @@ const resetPassword = tryCatch(
 //___________________________________
 
 const updateUserAvatarImage = tryCatch(
-    async (req,res)=>{
+    async (req, res) => {
         let user = req.user;
-        
+
         const avatarLocalPath = req.file?.path;
 
-        if(!avatarLocalPath) apiError(400,"avatar file is missing");
-                       
-        const avatar = await uploadCloudinary(avatarLocalPath,"image",profileImgConfig);
+        if (!avatarLocalPath) apiError(400, "avatar file is missing");
 
-        if(!avatar) apiError(400,"failed to upload avatar");
+        const avatar = await uploadCloudinary(avatarLocalPath, "image", profileImgConfig);
 
-        if(user.profileImage.public_id ){//if avatar already present 
-         
-            const res=await cloudinary.uploader.destroy(
-                user.profileImage.public_id 
+        if (!avatar) apiError(400, "failed to upload avatar");
+
+        if (user.profileImage.public_id) {//if avatar already present 
+
+            const res = await cloudinary.uploader.destroy(
+                user.profileImage.public_id
             );
 
-            if(res.result==="not found") apiError(400,"failed to delete previous image")
+            if (res.result === "not found") apiError(400, "failed to delete previous image")
         }
 
         user = await User.findByIdAndUpdate(
             user._id,
             {
-                $set:{
-                    profileImage:{
-                        public_id:avatar.public_id,
-                        secure_url:avatar.secure_url
+                $set: {
+                    profileImage: {
+                        public_id: avatar.public_id,
+                        secure_url: avatar.secure_url
                     }
                 }
             },
             {
-                new:true
+                new: true
             }
         ).select("-forgotPasswordToken");
 
         await Instructor.findOneAndUpdate({
-            user_id : user._id,
-            'profileCompleted.status' : false
-        },{
-            $set:{
-                'profileCompleted.step' : 3
+            user_id: user._id,
+            'profileCompleted.status': false
+        }, {
+            $set: {
+                'profileCompleted.step': 3
             }
         })
 
         res.status(200).json(
-            new apiResponse("avatar image updated successfully",user)
+            new apiResponse("avatar image updated successfully", user)
         )
 
-        return;       
+        return;
 
     }
 )
@@ -522,60 +528,74 @@ const updateUserAvatarImage = tryCatch(
 //___________________________________
 
 const updateUserDetails = tryCatch(
-    async(req, res)=>{
-        const {username} = req.body;
+    async (req, res) => {
+        const { username, headline, bio, language, social } = req.body;
 
-        if(username?.trim()==="" || username===undefined) apiError(400,"username not provided");
-
-        if(username ===req.user.username){
-            apiError(400,"provide different username than previously used");
+        if ([username, headline, bio, language, social].every(value => value == undefined || value?.trim == "")) {
+            apiError(400, " no field is given")
         }
-        
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            {
-                $set:{
-                    username:username
-                }
-            },
-            {
-                new:true
-            }
-        ).select("-forgotPasswordToken");
 
-        if(!user) apiError(400,"failed to update username");
+        const fieldsToUpdateInstructor = JSON.parse(JSON.stringify({headline, bio, language, social }));
+
+        if (username) {
+
+            const user = await User.findByIdAndUpdate(
+                req.user._id,
+                {
+                    $set: {
+                        username: username
+                    }
+                },
+                {
+                    new: true
+                }
+            ).select("-forgotPasswordToken");
+
+            if (!user) apiError(400, "failed to update username");
+        }
+
+        if(Object.keys(fieldsToUpdateInstructor).length > 0 ){
+
+            const result = await Instructor.findOneAndUpdate(
+                {user_id: req.user._id},
+                {$set: fieldsToUpdateInstructor}
+            );
+
+            if(!result) apiError(400, "failed to update fields");
+
+        }
 
         res.status(200).json(
-            new apiResponse("username updated successfully",user)
+            new apiResponse("user details updated successfully")
         )
     }
 )
 
 const userConfig = tryCatch(
-    async (req, res )=>{
-        
+    async (req, res) => {
+
         let config = await UserConfig.findOne({
-            user_id : req.user._id
+            user_id: req.user._id
         });
 
-        if(!config){
+        if (!config) {
             config = await UserConfig.create({
                 user_id: req.user._id
             });
-            
+
         };
 
 
-        const favouriteList = config.favourite.map((value)=> new mongoose.Types.ObjectId(value)) ;
-        const cartList = config.cart.map((value)=> new mongoose.Types.ObjectId(value)) ;
-        
+        const favouriteList = config.favourite.map((value) => new mongoose.Types.ObjectId(value));
+        const cartList = config.cart.map((value) => new mongoose.Types.ObjectId(value));
+
         const results = await Course.aggregate([
             {
                 $facet: {
                     cart: [
                         {
                             $match: {
-                                _id: { $in: cartList}
+                                _id: { $in: cartList }
                             }
                         },
                         {
@@ -647,32 +667,32 @@ const userConfig = tryCatch(
                 }
             }
         ]);
-        
+
         const cart = results[0].cart;
         const favourites = results[0].favourites;
-       
-        
-        
+
+
+
         res.status(200).json(
-            new apiResponse("config fetched successfully",{cart, favourites})
+            new apiResponse("config fetched successfully", { cart, favourites })
         )
     }
 )
 
 const cart = tryCatch(
-    async (req, res )=>{
+    async (req, res) => {
 
         const { add, remove } = req.query;
         console.log(remove);
 
         let cart;
-        if(mongoose.Types.ObjectId.isValid(remove)){
+        if (mongoose.Types.ObjectId.isValid(remove)) {
             cart = await UserConfig.findOneAndUpdate(
                 {
                     user_id: req.user._id
                 },
                 {
-                    $pull:{
+                    $pull: {
                         cart: remove
                     }
                 },
@@ -680,51 +700,51 @@ const cart = tryCatch(
                     new: true
                 }
             );
-           
-        }else if(mongoose.Types.ObjectId.isValid(add)){
+
+        } else if (mongoose.Types.ObjectId.isValid(add)) {
             cart = await UserConfig.findOneAndUpdate(
                 {
                     user_id: req.user._id
                 },
                 {
-                    $addToSet:{
+                    $addToSet: {
                         cart: add
                     }
                 },
                 {
-                    new:true
+                    new: true
                 }
             )
         };
 
-        if(!cart) apiError(400,"something went wrong");
-        
+        if (!cart) apiError(400, "something went wrong");
 
-        const message = add!= undefined ? "course added to cart" : "course remove from the cart" ;
+
+        const message = add != undefined ? "course added to cart" : "course remove from the cart";
 
         res.status(200).json(
-            new apiResponse( message , cart)
+            new apiResponse(message, cart)
         )
-        
+
 
 
     }
 )
 
 const favourite = tryCatch(
-    async (req, res )=>{
+    async (req, res) => {
 
         const { add, remove } = req.query;
-        
+
 
         let favourite;
-        if(mongoose.Types.ObjectId.isValid(remove)){
+        if (mongoose.Types.ObjectId.isValid(remove)) {
             favourite = await UserConfig.findOneAndUpdate(
                 {
                     user_id: req.user._id
                 },
                 {
-                    $pull:{
+                    $pull: {
                         favourite: remove
                     }
                 },
@@ -732,29 +752,29 @@ const favourite = tryCatch(
                     new: true
                 }
             );
-           
-        }else if(mongoose.Types.ObjectId.isValid(add)){
+
+        } else if (mongoose.Types.ObjectId.isValid(add)) {
             favourite = await UserConfig.findOneAndUpdate(
                 {
                     user_id: req.user._id
                 },
                 {
-                    $addToSet:{
+                    $addToSet: {
                         favourite: add
                     }
                 },
                 {
-                    new:true
+                    new: true
                 }
             )
         };
 
-        if(!favourite) apiError(400,"something went wrong");
+        if (!favourite) apiError(400, "something went wrong");
 
         res.status(200).json(
-            new apiResponse("updated succesfully",favourite)
+            new apiResponse("updated succesfully", favourite)
         )
-        
+
 
 
     }
