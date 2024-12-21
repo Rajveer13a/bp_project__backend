@@ -62,6 +62,13 @@ import revenueSharerouter from "./routes/revenueShare.routes.js";
 app.use("/api/v1/payouts", revenueSharerouter)
 //----------------------------------
 
+
+import searchRouter from "./routes/search.routes.js";
+
+app.use("/api/v1/search", searchRouter)
+//----------------------------------
+
+
 app.get("/ping",(req,res)=>{
     res.send("Pong from server")
 } )

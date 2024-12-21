@@ -415,7 +415,7 @@ const updateMedia = tryCatch(
 const updateCourseDetails = tryCatch(
     async (req, res) => {
 
-        const { description, title, subtitle, language, level, category } = req.body;
+        const { description, title, subtitle, language, level, category,tags } = req.body;
 
         const { course_id } = req.params;
         // console.log(description, title, subtitle, language, level, category)
@@ -453,7 +453,7 @@ const updateCourseDetails = tryCatch(
 
 
 
-        const fieldObj = { description, title, subtitle, language, level, category };
+        const fieldObj = { description, title, subtitle, language, level, category,tags };
 
         Object.keys(fieldObj).map((value) => {
             course[value] = fieldObj[value];

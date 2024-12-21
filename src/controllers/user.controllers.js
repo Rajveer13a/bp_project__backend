@@ -14,6 +14,7 @@ import UserConfig from "../models/user.config.js";
 import mongoose from "mongoose";
 import Course from "../models/course.model.js";
 import Instructor from "../models/instructor.model.js";
+import { linkSessionToUser } from "./search.controller.js";
 
 const cookieOptions = {
     httpOnly: false,
@@ -227,6 +228,8 @@ const loginUser = tryCatch(
         res.status(200).json(
             new apiResponse("user logged in succesfully", user)
         );
+
+        await linkSessionToUser(user._id, req.cookies.trackingId);
 
         return;
 

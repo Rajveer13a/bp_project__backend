@@ -98,6 +98,7 @@ const courseSchema = new Schema({
         minlength: [200, "description needs to be more than 200 words"],
         maxlength: [10000, "description needs to be less than 10000 words"]
     },
+    tags:[String],
     goals: {
         objectives: {
             type : [String],
@@ -131,6 +132,22 @@ const courseSchema = new Schema({
 
 });
 
+courseSchema.index({ 
+    title: "text", 
+    description: "text", 
+    tags: "text", 
+    category: "text" 
+});
+
+courseSchema.index({ price: 1 });
+
+courseSchema.index({ category: 1, level: 1 });
+
+
 const Course = mongoose.model("Course", courseSchema);
+
+Course.syncIndexes()
+  .then(() => console.log("Indexes are synchronized"))
+  .catch(err => console.error("Error syncing indexes:", err));
 
 export default Course;
