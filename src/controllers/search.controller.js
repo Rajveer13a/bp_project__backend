@@ -3,6 +3,8 @@ import tryCatch from "../utils/tryCatch.js";
 import apiError from "../utils/apiError.js"
 import apiResponse from "../utils/apiResponse.js"
 import SearchHistory from "../models/search.model.js";
+import { Interaction } from "../models/search.model.js";
+import crypto from "crypto";
 
 const searchCourses = tryCatch(
     async (req, res, next) => {
@@ -133,7 +135,7 @@ const searchCourses = tryCatch(
 
         if (!courses) apiError(400, "Failed to get courses");
 
-        if(courses.length > 0) await logSearchTerm({ user_id, searchTerm, trackingId }, "_", next);
+        if (courses.length > 0) await logSearchTerm({ user_id, searchTerm, trackingId }, "_", next);
 
         res.status(200).json(
             new apiResponse("success", {
@@ -169,12 +171,42 @@ const logSearchTerm = tryCatch(
     }
 )
 
+export const logInteraction = tryCatch(
+    async ({ user_id, course_id, action, trackingId, tags, category }, res, next) => {
+
+        if (!course_id || !action || !category || !tags) return;
+
+        if (!trackingId && !user_id) {
+            trackingId = crypto.randomBytes(20).toString('hex');
+            res.cookie("trackingId", trackingId, {
+                httpOnly: false,
+                secure: true,
+                sameSite: 'None'
+            });
+        }
+
+        const filter = user_id ? { user_id, course_id } : { trackingId, course_id };
+
+        const update = {
+            $set: { lastIntrectionAt: new Date() },
+            $inc: { count: 1 },
+            $setOnInsert: { category, tags, action }
+        };
+
+        await Interaction.findOneAndUpdate(filter, update, {
+            upsert: true,
+            new: true
+        });
+
+    }
+)
+
 const getSearchSuggestions = tryCatch(
     async (req, res) => {
 
         const { searchTerm, user_id } = req.query;
 
-        const { trackingId }= req.cookies;
+        const { trackingId } = req.cookies;
 
         if (!searchTerm) apiError(400, "search term is required")
 
@@ -207,7 +239,7 @@ const getSearchSuggestions = tryCatch(
         if (suggestions.length === 0) {
             const courseSuggestions = await Course.find({
                 title: { $regex: searchTerm, $options: "i" },
-                approved:true
+                approved: true
             })
                 .select("title")
                 .limit(5);
@@ -225,12 +257,14 @@ const getSearchSuggestions = tryCatch(
 
 const linkSessionToUser = async (user_id, trackingId) => {
     if (!user_id || !trackingId) return;
-    
+
     await SearchHistory.updateMany(
         { trackingId, user_id: null },
         { $set: { user_id } }
     );
 };
+
+
 
 
 export {

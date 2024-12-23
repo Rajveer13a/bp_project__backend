@@ -6,6 +6,7 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import tryCatch from "../utils/tryCatch.js";
 import mongoose from "mongoose";
+import { logInteraction } from "./search.controller.js";
 
 const approvedCourses = tryCatch(
     async (req, res) => {
@@ -66,9 +67,9 @@ const approvedCourses = tryCatch(
 
 
 const courseById = tryCatch(
-    async (req, res) => {
+    async (req, res, next) => {
 
-        const { course_id } = req.query;
+        const { course_id, user_id } = req.query;
 
 
         // const userCourses = req.user.purchasedCourses;
@@ -190,6 +191,8 @@ const courseById = tryCatch(
         if (course.length === 0) {
             apiError(400, " no course found");
         };
+        
+        await logInteraction({user_id, course_id, action:"viewed", trackingId:req.cookies.trackingId, tags:course[0].tags , category:course[0].category},res,next);
 
         res.status(200).json(
             new apiResponse("course fetched successfully", course[0])
