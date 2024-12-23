@@ -6,15 +6,19 @@ import SearchHistory from "../models/search.model.js";
 
 const searchCourses = tryCatch(
     async (req, res, next) => {
+        let { searchTerm, category, level, priceMin, priceMax, language, rating, sortBy, sortOrder, page = 1, user_id } = req.query;
 
-        const { searchTerm, category, level, priceMin, priceMax, language, sortBy, sortOrder, page = 1, limit = 10, user_id} = req.query;
+        const limit = 10;
 
-        // if (!searchTerm) apiError(400, "searchTerm not given");
+        page = Number(page);
 
         const { trackingId } = req.cookies;
 
         const filters = {
-            category, level, language, approved:true
+            category,
+            level,
+            language,
+            approved: true,
         };
 
         if (searchTerm) {
@@ -31,17 +35,18 @@ const searchCourses = tryCatch(
             if (priceMax) filters.price.$lte = Number(priceMax);
         }
 
-        const skip = (page - 1) * limit;
-
         let sortCriteria = {};
-
         if (sortBy === 'price') {
             sortCriteria.price = sortOrder === 'desc' ? -1 : 1;
         } else if (sortBy === 'rating') {
             sortCriteria.averageRating = sortOrder === 'desc' ? -1 : 1;
         } else if (sortBy === 'date') {
-            sortCriteria.createdAt = sortOrder === 'desc' ? -1 : 1;
+            sortCriteria.createdAt = 1;
+        } else if (sortBy === 'reviewed') {
+            sortCriteria.totalRatings = sortOrder === 'desc' ? -1 : 1;
         }
+
+        const skip = (page - 1) * limit;
 
         const pipeline = [
             {
@@ -62,72 +67,87 @@ const searchCourses = tryCatch(
                 },
             },
             {
-                $project: {
-                    ratings: 0,
+                $match: {
+                    ...(rating ? { averageRating: { $gte: Number(rating) } } : {}),
                 },
             },
             {
-                $lookup: {
-                    from: "instructors", // Lookup the Instructor collection
-                    localField: "instructor_id",
-                    foreignField: "_id",
-                    as: "instructorDetails",
+                $facet: {
+                    metadata: [{ $count: "total" }],
+                    courses: [
+                        ...(Object.keys(sortCriteria).length > 0 ? [{ $sort: sortCriteria }] : []),
+                        { $skip: skip },
+                        { $limit: limit },
+                        {
+                            $lookup: {
+                                from: "instructors",
+                                localField: "instructor_id",
+                                foreignField: "_id",
+                                as: "instructorDetails",
+                            },
+                        },
+                        {
+                            $unwind: {
+                                path: "$instructorDetails",
+                                preserveNullAndEmptyArrays: true,
+                            },
+                        },
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "instructorDetails.user_id",
+                                foreignField: "_id",
+                                as: "userDetails",
+                            },
+                        },
+                        {
+                            $unwind: {
+                                path: "$userDetails",
+                                preserveNullAndEmptyArrays: true,
+                            },
+                        },
+                        {
+                            $project: {
+                                title: 1,
+                                category: 1,
+                                level: 1,
+                                language: 1,
+                                price: 1,
+                                averageRating: 1,
+                                description: 1,
+                                totalRatings: 1,
+                                thumbnail: 1,
+                                subtitle: 1,
+                                goals: 1,
+                                instructor: "$userDetails.username",
+                            },
+                        },
+                    ],
                 },
             },
-            {
-                $unwind: {
-                    path: "$instructorDetails",
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "instructorDetails.user_id",
-                    foreignField: "_id",
-                    as: "userDetails",
-                },
-            },
-            {
-                $unwind: {
-                    path: "$userDetails",
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $project: {
-                    title: 1,
-                    category: 1,
-                    level: 1,
-                    language: 1,
-                    price: 1,
-                    averageRating: 1,
-                    description: 1,
-                    totalRatings: 1,
-                    thumbnail: 1,
-                    subtitle: 1,
-                    instructor: "$userDetails.username",
-                },
-            },
-            { $skip: skip },
-            { $limit: limit },
         ];
 
-        if (Object.keys(sortCriteria).length > 0) {
-            pipeline.push({ $sort: sortCriteria });
-        }
-
-        const courses = await Course.aggregate(pipeline);
+        const result = await Course.aggregate(pipeline);
+        const metadata = result[0].metadata[0] || { total: 0 };
+        const courses = result[0].courses;
 
         if (!courses) apiError(400, "Failed to get courses");
 
-        await logSearchTerm({ user_id, searchTerm, trackingId }, "_", next);
+        if(courses.length > 0) await logSearchTerm({ user_id, searchTerm, trackingId }, "_", next);
 
         res.status(200).json(
-            new apiResponse("success", {courses, searchTerm: searchTerm || ""})
+            new apiResponse("success", {
+                courses,
+                total: metadata.total,
+                totalPages: Math.ceil(metadata.total / limit),
+                currentPage: page,
+                searchTerm: searchTerm || "",
+                limit
+            })
         );
     }
 );
+
 
 const logSearchTerm = tryCatch(
     async ({ searchTerm, user_id = null, trackingId = null, }, _, next) => {

@@ -130,7 +130,7 @@ const courseSchema = new Schema({
         select: false
     },
 
-});
+},{timestamps:true});
 
 courseSchema.index({ 
     title: "text", 
