@@ -199,7 +199,7 @@ const loginUser = tryCatch(
 
         let user = await User.findOne({ email }).select('+password');
 
-        if (!user) apiError("incorrect username or password");
+        if (!user) apiError(400,"incorrect username or password");
 
         const isValidPass = await user.isPasswordCorrect(password);
 

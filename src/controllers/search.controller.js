@@ -172,7 +172,7 @@ const logSearchTerm = tryCatch(
 )
 
 export const logInteraction = tryCatch(
-    async ({ user_id, course_id, action, trackingId, tags, category }, res, next) => {
+    async ({ user_id, course_id, action, trackingId, tags = [], category }, res, next) => {
 
         if (!course_id || !action || !category || !tags) return;
 
@@ -264,11 +264,209 @@ const linkSessionToUser = async (user_id, trackingId) => {
     );
 };
 
+// recommendation
 
+const getCollaborativeRecommendations = tryCatch(
+    async (req, res) => {
+        const { user_id } = req.query;
+        const trackingId = req.cookies.trackingId;
+
+        // Fetch user interaction history
+        const userHistory = await Interaction.find({
+            $or: [
+                { user_id: user_id },
+                { trackingId: trackingId }
+            ]
+        }).populate('course_id');
+
+        const viewedCourses = userHistory.map(entry => entry.course_id._id);
+
+        if (viewedCourses.length === 0) {
+            return res.status(404).json(
+                new apiResponse("success", [])
+            );
+        }
+
+        // Find users who have interacted with the same courses
+        const similarUsers = await Interaction.aggregate([
+            { $match: { course_id: { $in: viewedCourses } } },
+            { $group: { _id: "$user_id" } },
+            { $match: { _id: { $ne: user_id } } },
+        ]);
+
+        const similarUserIds = similarUsers.map(user => user._id);
+
+        // Find courses that these similar users have interacted with
+        const recommendedCourses = await Interaction.find({
+            user_id: { $in: similarUserIds },
+            course_id: { $nin: viewedCourses }  // Exclude courses already viewed by the user
+        }).populate('course_id').limit(10);
+
+        // Get the course details
+        const uniqueCourseIds = [...new Set(recommendedCourses.map(entry => entry.course_id._id.toString()))];
+        const populatedRecommendations = await Course.find({ _id: { $in: uniqueCourseIds }, approved: true });
+
+        res.status(200).json(
+            new apiResponse("success", populatedRecommendations)
+        );
+    }
+);
+
+const getContentBasedRecommendations = tryCatch(
+    async (req, res) => {
+        const { user_id } = req.query;
+        const trackingId = req.cookies.trackingId;
+
+        // Fetch user interaction history without populating
+        const userInteraction = await Interaction.find({
+            $or: [
+                { user_id: user_id },
+                { trackingId: trackingId }
+            ]
+        });
+
+        const viewedCourses = userInteraction.map(entry => entry);
+
+        if (viewedCourses.length === 0) {
+            return res.status(404).json(
+                new apiResponse("success", [])
+            );
+        }
+
+        const tags = [...new Set(viewedCourses.flatMap(course => course.tags))];
+
+        // Find recommended courses based on similar tags
+        const recommendedCourses = await Course.find({
+            tags: { $in: tags },
+            // _id: { $nin: viewedCourses },
+            approved: true
+        }).limit(10);
+
+        res.status(200).json(
+            new apiResponse("success", recommendedCourses)
+        );
+    }
+);
+
+const getContextualRecommendations = tryCatch(
+    async (req, res) => {
+        const { user_id } = req.query;
+        const trackingId = req.cookies.trackingId;
+
+        // Find the most recent search term
+        const recentSearch = await SearchHistory.findOne({
+            $or: [
+                { user_id: user_id },
+                { trackingId: trackingId }
+            ]
+        }).sort({ lastSearchedAt: -1 });
+
+        if (!recentSearch) {
+            return res.status(404).json(
+                new apiResponse("success", [])
+            );
+        }
+
+        // Find recommended courses based on the most recent search term
+        const recommendedCourses = await Course.find({
+            $or: [
+                { title: { $regex: recentSearch.searchTerm, $options: "i" } },
+                { tags: { $in: [recentSearch.searchTerm] } }
+            ],
+            approved: true
+        }).limit(10);
+
+        res.status(200).json(
+            new apiResponse("success", recommendedCourses)
+        );
+    }
+);
+
+const getTopicBasedRecommendations = tryCatch(
+    async (req, res) => {
+        const { user_id } = req.query;
+        const trackingId = req.cookies.trackingId;
+
+        const coreTopics = {
+            "Web Development": ["web", "web development", "frontend", "backend", "javascript", "react", "node", "html", "css", "vue", "angular", "typescript", "sass", "bootstrap", "webpack", "gulp", "npm", "babel", "redux", "express", "next.js", "nuxt.js", "graphql", "api", "rest", "sql", "nosql", "mongodb", "postgresql", "php", "laravel", "django", "ruby on rails", "flask", "spring", "asp.net", "jquery", "ajax", "json", "xml", "git", "github", "bitbucket", "ci/cd", "docker", "kubernetes", "cloud", "aws", "azure"],
+            "Ethical Hacking": ["cybersecurity", "hacking", "security", "penetration testing", "ethical hacking", "network security", "information security", "vulnerability assessment", "incident response", "malware analysis", "forensics", "exploit development", "reverse engineering", "social engineering", "phishing", "cyber threat intelligence", "risk management", "compliance", "security operations", "firewalls", "intrusion detection", "intrusion prevention", "siem", "ids", "ips", "encryption", "cryptography", "ssl", "tls", "vpn", "wireshark", "metasploit", "burp suite", "nmap", "owasp", "web application security", "mobile security", "cloud security", "endpoint security", "zero trust", "zero day", "ctf", "bug bounty", "red teaming", "blue teaming", "threat hunting"],
+            "Data Science": ["data science", "machine learning", "deep learning", "data analysis", "statistics", "data visualization", "python", "r", "sql", "pandas", "numpy", "scikit-learn", "tensorflow", "keras", "pytorch", "matplotlib", "seaborn", "plotly", "power bi", "tableau", "big data", "hadoop", "spark", "etl", "data warehousing", "data mining", "time series", "nlp", "natural language processing", "predictive analytics", "business intelligence", "ai", "artificial intelligence", "data engineering", "cloud computing", "aws", "azure", "google cloud", "data governance", "data ethics", "data quality", "data cleaning", "feature engineering", "model deployment", "mle", "machine learning engineering", "data storytelling"],
+            "AI and Machine Learning": ["artificial intelligence", "machine learning", "neural networks", "ai", "deep learning", "supervised learning", "unsupervised learning", "reinforcement learning", "computer vision", "natural language processing", "nlp", "robotics", "automation", "tensorflow", "keras", "pytorch", "scikit-learn", "data preprocessing", "data augmentation", "model evaluation", "model selection", "hyperparameter tuning", "gradient descent", "backpropagation", "transfer learning", "generative adversarial networks", "gans", "recurrent neural networks", "rnns", "convolutional neural networks", "cnns", "self-driving cars", "ai ethics", "explainable ai", "ai fairness", "ai safety", "robotic process automation", "rpa", "edge ai", "ai in healthcare", "ai in finance", "ai in marketing", "ai in education", "ai in retail", "ai in manufacturing", "speech recognition", "image recognition", "chatbots", "virtual assistants"],
+            "Mobile Development": ["mobile development", "android", "ios", "flutter", "react native", "swift", "kotlin", "java", "dart", "xcode", "android studio", "mobile app design", "mobile ui", "mobile ux", "cross-platform development", "mobile security", "firebase", "mobile testing", "unit testing", "integration testing", "app store optimization", "aso", "push notifications", "in-app purchases", "monetization", "mobile performance", "native development", "phonegap", "cordova", "ionic", "progressive web apps", "pwa", "ar", "vr", "augmented reality", "virtual reality", "mobile analytics", "user engagement", "mobile advertising", "admob", "unity", "unreal engine", "game development", "mobile games", "mobile frameworks", "mobile databases", "sqlite", "realm"]
+        };
+
+        if (!user_id && !trackingId) {
+            apiError(400,"trackingId is required")
+        }
+        
+        const userInteraction = await Interaction.find({
+            $or: [
+                { user_id: user_id },
+                { trackingId: trackingId }
+            ]
+        }).populate('course_id');
+
+        const viewedCourses = userInteraction.map(entry => entry.course_id);
+
+        if (viewedCourses.length === 0) {
+            return res.status(404).json(
+                new apiResponse("success", [])
+            );
+        }
+
+        const viewedCourseIds = viewedCourses.map(course => course._id.toString());
+
+        const tagFrequency = {};
+        viewedCourses.forEach(course => {
+            course.tags.forEach(tag => {
+                tagFrequency[tag] = (tagFrequency[tag] || 0) + 1;
+            });
+        });
+
+
+        const topicInterest = {};
+        for (const [topic, tags] of Object.entries(coreTopics)) {
+            tags.forEach(tag => {
+                const regex = new RegExp(`\\b${tag}\\b`, "i");
+                for (const tag in tagFrequency) {
+                    if (regex.test(tag)) {
+                        topicInterest[topic] = (topicInterest[topic] || 0) + tagFrequency[tag];
+                    }
+                }
+            });
+        }
+
+        const sortedTopics = Object.keys(topicInterest).sort((a, b) => topicInterest[b] - topicInterest[a]);
+        const topTwoTopics = sortedTopics.slice(0, 2);
+
+        const recommendations = await Promise.all(topTwoTopics.map(async topic => {
+            const topicTags = coreTopics[topic];
+            const regexArray = topicTags.map(tag => new RegExp(`\\b${tag}\\b`, "i"));
+            const courses = await Course.find({
+                tags: { $in: regexArray },
+                // _id: { $nin: viewedCourseIds },
+                approved: true
+            }).limit(10);
+            return {
+                topic: topic,
+                data: courses
+            };
+        }));
+
+        res.status(200).json(
+            new apiResponse("success", recommendations)
+        );
+    }
+);
 
 
 export {
     searchCourses,
     getSearchSuggestions,
-    linkSessionToUser
+    linkSessionToUser,
+    getCollaborativeRecommendations,
+    getContentBasedRecommendations,
+    getContextualRecommendations,
+    getTopicBasedRecommendations
+
 }
