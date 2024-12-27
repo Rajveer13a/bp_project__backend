@@ -13,7 +13,10 @@ const instructorSchema = new Schema({
         trim: true
     },
     profileCompleted: {
-        status: Boolean,
+        status: {
+            type: Boolean,
+            default:false
+        },
         step: {
             type: Number,
             default: 1

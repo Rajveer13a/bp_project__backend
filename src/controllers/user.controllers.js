@@ -5,7 +5,7 @@ import User from "../models/user.model.js";
 import { sendForgotPasswordMail, sendVerifyMail } from "../utils/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
-import { profileImgConfig, randomByteSize } from "../constants.js";
+import { ageCookie, profileImgConfig, randomByteSize } from "../constants.js";
 import jwt from "jsonwebtoken";
 import { type } from "os";
 import { log } from "console";
@@ -19,7 +19,8 @@ import { linkSessionToUser } from "./search.controller.js";
 const cookieOptions = {
     httpOnly: false,
     secure: true,
-    sameSite: 'None'
+    sameSite: 'None',
+    age : ageCookie
 }
 
 //___________________________________

@@ -44,6 +44,7 @@ export const payrollDate = [1,2,3,23] ; //payrolls execution date
 
 
 export const priceList = [// Free
+    400,
     799,
     1199,
     1499,
@@ -55,3 +56,5 @@ export const priceList = [// Free
     2699,
     2799,
     2899]; //allowed course prices
+
+export const ageCookie = 3 * 24 * 60 * 60 * 1000 // Cookie expires in 7 days

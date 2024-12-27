@@ -181,7 +181,8 @@ export const logInteraction = tryCatch(
             res.cookie("trackingId", trackingId, {
                 httpOnly: false,
                 secure: true,
-                sameSite: 'None'
+                sameSite: 'None',
+                age: 365 * 24 * 60 * 60 * 1000, // Cookie expires in 365 days
             });
         }
 
@@ -270,6 +271,9 @@ const getCollaborativeRecommendations = tryCatch(
     async (req, res) => {
         const { user_id } = req.query;
         const trackingId = req.cookies.trackingId;
+
+        console.log(user_id, trackingId, "here");
+        
 
         // Fetch user interaction history
         const userHistory = await Interaction.find({

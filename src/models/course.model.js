@@ -71,20 +71,7 @@ const courseSchema = new Schema({
         type: String,
         required: true,
         enum: [
-            "music",
-            "development",
-            "business",
-            "finance",
-            "accounting",
-            "it-software",
-            "office-productivity",
-            "personal-development",
-            "design",
-            "marketing",
-            "lifestyle",
-            "photography-video",
-            "health-fitness",
-            "teaching-academics"
+            "Music", "Development", "Business", "Finance", "Accounting", "IT & Software", "Office Productivity", "Personal Development", "Design", "Marketing", "Lifestyle", "Photography & Video", "Health & Fitness", "Teaching & Academics"
         ]
     },
     price: {

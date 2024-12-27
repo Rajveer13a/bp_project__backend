@@ -9,6 +9,7 @@ import Section from "../models/courseSection.model.js";
 import Lecture from "../models/sectionLecture.model.js";
 import mongoose from "mongoose";
 import Review from "../models/courseReview.model.js";
+import Payment from "../models/payment.model.js";
 
 
 async function addNewResourceToLecture(req, type) {
@@ -127,9 +128,23 @@ const createCourse = tryCatch(
             new apiResponse("course created successfully", course)
         );
 
+        const section = await Section.create(
+            {
+                title: "Introduction",
+                course_id: course._id,
+                instructor_id: instructor._id
+            }
+        );
+
+        await Lecture.create(
+            {
+                title: "Introduction",
+                instructor_id: instructor._id,
+                section_id: section._id
+            }
+        );
+
         return;
-
-
 
     }
 );
@@ -142,10 +157,10 @@ const createSection = tryCatch(
 
         const { course_id } = req.params;
 
-        const { title } = req.body;
+        const { title, learningObjective } = req.body;
 
         if (
-            [title, course_id].some(
+            [title, course_id, learningObjective].some(
                 (value) => value === undefined || value?.trim() === "")
         ) {
             apiError(400, "all values are not given");
@@ -163,6 +178,7 @@ const createSection = tryCatch(
         const section = await Section.create(
             {
                 title,
+                learningObjective,
                 course_id: course._id,
                 instructor_id: instructor._id
             }
@@ -372,15 +388,15 @@ const updateMedia = tryCatch(
         const type = fieldname === "trailerVideo" ? "video" : "image";
 
         if (course[fieldname].public_id) {
-            const dest = await cloudinary.uploader.destroy(course[fieldname].public_id , {resource_type : type });
-            if (dest.result === "not found" && dest.result!="not found") {
+            const dest = await cloudinary.uploader.destroy(course[fieldname].public_id, { resource_type: type });
+            if (dest.result === "not found" && dest.result != "not found") {
                 return apiError(400, `Failed to delete previous ${fieldname}`);
             }
 
-            
+
         }
-        
-        
+
+
         // Upload the new file to Cloudinary
         const upload = await uploadCloudinary(file, type, thumbnailImgConfig);
 
@@ -397,9 +413,9 @@ const updateMedia = tryCatch(
         await course.save();
 
         const review = await Review.findOneAndUpdate(
-            {course_id: course_id},
+            { course_id: course_id },
             {
-                $set:{
+                $set: {
                     landing: null
                 }
             }
@@ -415,7 +431,7 @@ const updateMedia = tryCatch(
 const updateCourseDetails = tryCatch(
     async (req, res) => {
 
-        const { description, title, subtitle, language, level, category,tags } = req.body;
+        const { description, title, subtitle, language, level, category, tags } = req.body;
 
         const { course_id } = req.params;
         // console.log(description, title, subtitle, language, level, category)
@@ -453,7 +469,7 @@ const updateCourseDetails = tryCatch(
 
 
 
-        const fieldObj = { description, title, subtitle, language, level, category,tags };
+        const fieldObj = { description, title, subtitle, language, level, category, tags };
 
         Object.keys(fieldObj).map((value) => {
             course[value] = fieldObj[value];
@@ -493,9 +509,9 @@ const updateCourseDetails = tryCatch(
         await course.save();
 
         const review = await Review.findOneAndUpdate(
-            {course_id: course_id},
+            { course_id: course_id },
             {
-                $set:{
+                $set: {
                     landing: null
                 }
             }
@@ -512,39 +528,39 @@ const updateCourseDetails = tryCatch(
 
 // -----------------------------------
 
-const updateCoursePrice  = tryCatch(
-    async(req, res)=>{
-        
-        const {profileCompleted} = req.instructor;
+const updateCoursePrice = tryCatch(
+    async (req, res) => {
 
-        if(!profileCompleted.status) apiError(400, "complete premium profile");
+        const { profileCompleted } = req.instructor;
 
-        const { course_id }  =req.params;
+        if (!profileCompleted.status) apiError(400, "complete premium profile");
 
-        const { price} = req.body;
+        const { course_id } = req.params;
 
-        if(course_id==undefined || course_id.trim()==""){
-            apiError(400,"course id not given");
+        const { price } = req.body;
+
+        if (course_id == undefined || course_id.trim() == "") {
+            apiError(400, "course id not given");
         }
 
-        
-        
-        if(price == undefined || !priceList.includes(price)){
-            apiError(400,"invalid price value given");
+
+
+        if (price == undefined || !priceList.includes(price)) {
+            apiError(400, "invalid price value given");
         }
 
-        const course  = await Course.findOneAndUpdate(
+        const course = await Course.findOneAndUpdate(
             {
                 _id: course_id,
                 instructor_id: req.instructor._id,
-            },{
-                $set:{
-                    price
-                }
+            }, {
+            $set: {
+                price
             }
+        }
         );
 
-        if(!course) apiError(400,"failed to update price");
+        if (!course) apiError(400, "failed to update price");
 
         res.status(200).json(
             new apiResponse("price updated successfully")
@@ -643,8 +659,8 @@ const deleteSection = tryCatch(
             section.course_id
         )
 
-        course.sections = course.sections.filter( (id)=> id!=section_id );
-        
+        course.sections = course.sections.filter((id) => id != section_id);
+
         await course.save();
 
         res.status(200).json(
@@ -682,6 +698,14 @@ const deleteCourse = tryCatch(
         };
 
         //deleting thumbnail of the course
+
+        const students = await Payment.find({
+            course_ids : {
+                $in : [course_id]
+            }
+        });
+
+        if(students.length > 0) apiError(400,"course once purchased by students cannot be deleted")
 
         let delThumbnial;
 
@@ -898,34 +922,34 @@ const approvalStatus = tryCatch(
 )
 
 const updateGoals = tryCatch(
-    async(req, res)=>{
+    async (req, res) => {
 
-        const {objectives,prerequisites ,intended_learners}  = req.body;
+        const { objectives, prerequisites, intended_learners } = req.body;
 
-        const {course_id} = req.params;
-        
-        if(!course_id || course_id.trim() == "") apiError(400,"course id not given");
+        const { course_id } = req.params;
+
+        if (!course_id || course_id.trim() == "") apiError(400, "course id not given");
 
         const course = await Course.findOneAndUpdate(
             {
-                instructor_id : req.instructor._id,
+                instructor_id: req.instructor._id,
                 _id: course_id
             },
             {
-                $set:{
-                    goals:{objectives,prerequisites ,intended_learners}
+                $set: {
+                    goals: { objectives, prerequisites, intended_learners }
                 }
-            },{
-                new:true
-            }
+            }, {
+            new: true
+        }
         );
 
-        if(!course) apiError(400,"failed to update");
+        if (!course) apiError(400, "failed to update");
 
         const review = await Review.findOneAndUpdate(
-            {course_id: course_id},
+            { course_id: course_id },
             {
-                $set:{
+                $set: {
                     intended: null
                 }
             }

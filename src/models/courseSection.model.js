@@ -6,6 +6,11 @@ const sectionSchema = new Schema({
         require:true,
         trim:true
     },
+    learningObjective:{
+        type:String,
+        require:true,
+        trim:true
+    },
     course_id:{
         type:Schema.Types.ObjectId,
         require:true

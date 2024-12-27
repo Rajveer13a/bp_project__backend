@@ -35,8 +35,8 @@ async function creatCustomer(instructor_id, email) {
 const addBankAccount = tryCatch(
     async (req, res) => {
 
-        const { name, account_number, ifsc } = req.body;
-
+        const { name, account_number, ifsc, account_id } = req.body;
+        
         if ([name, account_number, ifsc].some(
             value => value === undefined || value.trim() == ""
         )) {
@@ -44,6 +44,14 @@ const addBankAccount = tryCatch(
         };
 
         const customer = await creatCustomer(req.instructor._id, req.user.email);
+
+        if(account_id){
+            const prev = await Account.findOneAndDelete({
+                account_id
+            })
+
+            if(!prev) apiError(400,"failed to unlink previous account");
+        }
 
         // creating fund account for the customer
         const count_account = await Account.countDocuments({
@@ -105,9 +113,12 @@ const getBankAccount = tryCatch(
         if(!account){
             apiError(400,"account don't exist");
         }
+        
+        const data = account.bank_account;
+        data.account_id = account.account_id;
 
         res.status(200).json(
-            new apiResponse("success",account.bank_account)
+            new apiResponse("success",data)
         )
 
     }
@@ -186,5 +197,5 @@ setInterval(async () => {
 
 export {
     addBankAccount,
-    getBankAccount
+    getBankAccount,
 }
