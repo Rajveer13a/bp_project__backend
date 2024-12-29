@@ -56,6 +56,44 @@ const searchCourses = tryCatch(
             },
             {
                 $lookup: {
+                    localField: "_id",
+                    foreignField: "course_id",
+                    from: "sections",
+                    as: "sections",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "lectures",
+                                localField: "_id",
+                                foreignField: "section_id",
+                                as: "lectures"
+                            }
+                        },
+                        {
+                            $addFields: {
+                                sectionTotalDuration: {
+                                    $sum: "$lectures.resource.duration"
+                                },
+                                sectionTotalLectures: {
+                                    $size: "$lectures"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    totalLectures: {
+                        $sum: "$sections.sectionTotalLectures"
+                    },
+                    totalDuration: {
+                        $sum: "$sections.sectionTotalDuration"
+                    }
+                }
+            },
+            {
+                $lookup: {
                     from: "ratings",
                     localField: "_id",
                     foreignField: "course_id",
@@ -122,6 +160,9 @@ const searchCourses = tryCatch(
                                 subtitle: 1,
                                 goals: 1,
                                 instructor: "$userDetails.username",
+                                totalLectures: 1,
+                                totalDuration: 1
+
                             },
                         },
                     ],
@@ -272,9 +313,6 @@ const getCollaborativeRecommendations = tryCatch(
         const { user_id } = req.query;
         const trackingId = req.cookies.trackingId;
 
-        console.log(user_id, trackingId, "here");
-        
-
         // Fetch user interaction history
         const userHistory = await Interaction.find({
             $or: [
@@ -307,8 +345,82 @@ const getCollaborativeRecommendations = tryCatch(
         }).populate('course_id').limit(10);
 
         // Get the course details
-        const uniqueCourseIds = [...new Set(recommendedCourses.map(entry => entry.course_id._id.toString()))];
-        const populatedRecommendations = await Course.find({ _id: { $in: uniqueCourseIds }, approved: true });
+        const uniqueCourseIds = [...new Set(recommendedCourses.map(entry => entry.course_id._id))];
+        // const populatedRecommendations = await Course.find({ _id: { $in: uniqueCourseIds }, approved: true });
+        const populatedRecommendations = await Course.aggregate([
+            {
+                $match: {
+                    _id: { $in: uniqueCourseIds },
+                    approved: true
+                },
+            },
+            {
+                $lookup: {
+                    localField: "_id",
+                    foreignField: "course_id",
+                    from: "sections",
+                    as: "sections",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "lectures",
+                                localField: "_id",
+                                foreignField: "section_id",
+                                as: "lectures"
+                            }
+                        },
+                        {
+                            $addFields: {
+                                sectionTotalDuration: {
+                                    $sum: "$lectures.resource.duration"
+                                },
+                                sectionTotalLectures: {
+                                    $size: "$lectures"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    totalLectures: {
+                        $sum: "$sections.sectionTotalLectures"
+                    },
+                    totalDuration: {
+                        $sum: "$sections.sectionTotalDuration"
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "ratings",
+                    localField: "_id",
+                    foreignField: "course_id",
+                    as: "ratings"
+                }
+            },
+            {
+                $addFields: {
+                    averageRating: {
+                        $avg: "$ratings.rating"
+                    },
+                    totalRatings: {
+                        $size: "$ratings"
+                    }
+                }
+            },
+            {
+                $project: {
+                    sections: 0,
+                    lectures: 0,
+                    ratings: 0
+                }
+            },
+            {
+                $limit: 10
+            }
+        ])
 
         res.status(200).json(
             new apiResponse("success", populatedRecommendations)
@@ -400,9 +512,9 @@ const getTopicBasedRecommendations = tryCatch(
         };
 
         if (!user_id && !trackingId) {
-            apiError(400,"trackingId is required")
+            apiError(400, "trackingId is required")
         }
-        
+
         const userInteraction = await Interaction.find({
             $or: [
                 { user_id: user_id },
@@ -446,11 +558,87 @@ const getTopicBasedRecommendations = tryCatch(
         const recommendations = await Promise.all(topTwoTopics.map(async topic => {
             const topicTags = coreTopics[topic];
             const regexArray = topicTags.map(tag => new RegExp(`\\b${tag}\\b`, "i"));
-            const courses = await Course.find({
-                tags: { $in: regexArray },
-                // _id: { $nin: viewedCourseIds },
-                approved: true
-            }).limit(10);
+            // const courses = await Course.find({
+            //     tags: { $in: regexArray },
+            //     // _id: { $nin: viewedCourseIds },
+            //     approved: true
+            // }).limit(10);
+
+            const courses = await Course.aggregate([
+                {
+                    $match: {
+                        tags: { $in: regexArray },
+                        approved: true
+                    },
+                },
+                {
+                    $lookup: {
+                        localField: "_id",
+                        foreignField: "course_id",
+                        from: "sections",
+                        as: "sections",
+                        pipeline: [
+                            {
+                                $lookup: {
+                                    from: "lectures",
+                                    localField: "_id",
+                                    foreignField: "section_id",
+                                    as: "lectures"
+                                }
+                            },
+                            {
+                                $addFields: {
+                                    sectionTotalDuration: {
+                                        $sum: "$lectures.resource.duration"
+                                    },
+                                    sectionTotalLectures: {
+                                        $size: "$lectures"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    $addFields: {
+                        totalLectures: {
+                            $sum: "$sections.sectionTotalLectures"
+                        },
+                        totalDuration: {
+                            $sum: "$sections.sectionTotalDuration"
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "ratings",
+                        localField: "_id",
+                        foreignField: "course_id",
+                        as: "ratings"
+                    }
+                },
+                {
+                    $addFields: {
+                        averageRating: {
+                            $avg: "$ratings.rating"
+                        },
+                        totalRatings: {
+                            $size: "$ratings"
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        sections: 0,
+                        lectures: 0,
+                        ratings: 0
+                    }
+                },
+                {
+                    $limit: 10
+                }
+            ])
+
             return {
                 topic: topic,
                 data: courses

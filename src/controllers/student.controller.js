@@ -191,8 +191,15 @@ const courseById = tryCatch(
         if (course.length === 0) {
             apiError(400, " no course found");
         };
-        
-        await logInteraction({user_id, course_id, action:"viewed", trackingId:req.cookies.trackingId, tags:course[0].tags , category:course[0].category},res,next);
+
+        const totalStudents = await Payment.countDocuments({
+            paid: true,
+            course_ids: { $in: course_id }
+        })
+
+        course[0].totalStudents = totalStudents;
+
+        await logInteraction({ user_id, course_id, action: "viewed", trackingId: req.cookies.trackingId, tags: course[0].tags, category: course[0].category }, res, next);
 
         res.status(200).json(
             new apiResponse("course fetched successfully", course[0])
@@ -243,6 +250,55 @@ const learning = tryCatch(
             },
             {
                 $unwind: "$instructor"
+            },
+            {
+                $lookup: {
+                    from: "ratings",
+                    localField: "_id",
+                    foreignField: "course_id",
+                    as: "reviews",
+                    pipeline: [
+                        {
+                            $match: {
+                                user_id: new mongoose.Types.ObjectId(req.user._id)
+                            }
+                        },
+                        {
+                            $project: {
+                                rating: 1,
+                                comment: 1,
+                                updatedAt: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "studentprogresses",
+                    localField: "_id",
+                    foreignField: "course_id",
+                    as: "progress",
+                    pipeline: [
+                        {
+                            $match: {
+                                user_id: new mongoose.Types.ObjectId(req.user._id)
+                            }
+                        },
+                        {
+                            $project: {
+                                completed: 1,
+                                lastView: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    review: { $arrayElemAt: ["$reviews", 0] },
+                    progress: { $arrayElemAt: ["$progress", 0] }
+                }
             }
         ]);
 
@@ -301,6 +357,8 @@ const learnLecture = tryCatch(
 
                                 image: "$user.profileImage.secure_url",
                                 bio: 1,
+                                headline: 1,
+                                social:1,
                                 username: "$user.username",
 
 
@@ -630,7 +688,7 @@ const getRatings = tryCatch(
                 },
             },
         ]);
-        
+
 
         if (!ratings) apiError(400, "no rating for this course exists");
 
