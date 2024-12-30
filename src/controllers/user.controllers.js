@@ -387,10 +387,10 @@ const forgotPassword = tryCatch(
             const { expiry, token, emailLimit } = forgotPasswordToken;
 
             if (emailLimit === 0) {//rate limit exceeds
-                apiError(
-                    400,
-                    `token send too many times ,retry after ${expiry}`
+                res.status(200).json(
+                    new apiResponse(`try after cooldown ${forgotPasswordToken?.expiry}`, { tokenexpiry:forgotPasswordToken?.expiry }, false)
                 )
+                return
             };
             //rate limit not exceeds
             const ForgotPasswordToken = user.generateForgotPasswordToken(false);
@@ -429,9 +429,7 @@ const forgotPassword = tryCatch(
 const resetPassword = tryCatch(
     async (req, res) => {
 
-        const { token } = req.params;
-
-        const { newPassword } = req.body;
+        const { newPassword, token } = req.body;
 
         if (
             [token, newPassword].some(

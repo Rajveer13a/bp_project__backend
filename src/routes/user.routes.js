@@ -30,7 +30,7 @@ router.post('/changePassword',isLoggedIn(),changePassword);
 
 router.post('/forgotPassword',forgotPassword);
 
-router.post('/resetPassword/:token',resetPassword);
+router.post('/resetPassword',resetPassword);
 
 router.post('/updateUserAvatarImage',isLoggedIn(),imagemulter.single("avatar"),updateUserAvatarImage);
 

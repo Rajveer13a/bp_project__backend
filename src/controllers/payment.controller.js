@@ -243,7 +243,7 @@ const mysales = tryCatch(
             {
                 $match: {
                     "instructors._id": instructor_id
-                }
+                },
             },
             {
                 $unwind: "$instructors"
@@ -251,26 +251,21 @@ const mysales = tryCatch(
             {
                 $match: {
                     "instructors._id": instructor_id
-                }
+                },
+            },
+            {
+                $unwind: "$instructors.courses"
             },
             {
                 $project: {
                     paid: 1,
-                    course: "$instructors.courses"
-                }
+                    updatedAt: 1,
+                    course_id: "$instructors.courses.course_id",
+                    course_price: "$instructors.courses.price"
+                },
             },
-            {
-                $unwind: "$course"
-            },
-            {
-                $project: {
-                    paid: 1,
-                    course_id: "$course.id",
-                    course_price: "$course.price"
-                }
-            }
         ]);
-
+        
         if (!sales) apiError(400, "Failed to get sales data");
 
         res.status(200).json(
