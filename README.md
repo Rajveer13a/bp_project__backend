@@ -1,5 +1,5 @@
 
-# 🌟 BrainyPath  
+# 🌟 BrainyPath E-learning Platform 
 
 ### 🚀 **Empowering Education for Everyone**  
 
@@ -38,6 +38,19 @@
 - 🖇️ **Backend**: Node.js and Express.js with optimized APIs.  
 - 🗃️ **Database**: MongoDB for scalable data storage.  
 - ☁️ **Cloud Services**: Cloudinary for resource management and optimized delivery.  
+
+---
+
+## 🌟 **Visual Previews**  
+
+### Homepage
+![Screenshot (45)](https://github.com/user-attachments/assets/1a644511-11f7-4af7-87b8-9ee2a5fbf264)
+
+### Learner Dashboard  
+![Screenshot (57)](https://github.com/user-attachments/assets/eb7e1126-611b-4904-a82a-6da6dedbae86) 
+
+### Instructor Tools  
+![Screenshot (67)](https://github.com/user-attachments/assets/dc5b910a-50ca-4561-967a-893a02affd50) 
 
 ---
 
