@@ -171,7 +171,7 @@ BrainyPath_Backend/
 ### 🎓 **Learning Experience Features**  
 - Dynamic dashboards to manage courses and progress.  
 - Real-time tracking for section-wise and lecture-wise completion.  
-- Access resources such as videos, PDFs, and quizzes.  
+- Access resources such as videos, PDFs.  
 
 ### 💰 **Instructor Tools**  
 - Add sections, lectures, and resources with intuitive interfaces.  
@@ -190,18 +190,6 @@ BrainyPath_Backend/
 
 ---
 
-## 🌟 **Visual Previews**  
-
-### Learner Dashboard  
-![Learner Dashboard](https://via.placeholder.com/600x300)  
-
-### Instructor Tools  
-![Instructor Panel](https://via.placeholder.com/600x300)  
-
-### Course Management  
-![Course Page](https://via.placeholder.com/600x300)  
-
----
 
 ## 🌍 **Future Enhancements**  
 
