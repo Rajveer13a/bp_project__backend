@@ -1,6 +1,6 @@
 import Course from "../models/course.model.js";
 import Payment from "../models/payment.model.js";
-import Rating from "../models/Rating.model.js";
+import Rating from "../models/rating.model.js";
 import StudentProgress from "../models/studentProgress.model.js";
 import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
