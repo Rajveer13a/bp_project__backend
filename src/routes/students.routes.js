@@ -18,7 +18,7 @@ router.get("/learnLecture", isLoggedIn(), learnLecture);
 
 router.post("/rateCourse", isLoggedIn(), rateCourse);
 
-router.get("/courseRatings/:course_id", isLoggedIn(), getRatings);
+router.get("/courseRatings/:course_id", getRatings);
 
 router.delete("/deleteRating/:course_id", isLoggedIn(), deleteRating);
 
