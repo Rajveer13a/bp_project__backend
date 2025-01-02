@@ -9,7 +9,7 @@ const instructorSchema = new Schema({
     bio: {
         type: String,
         minlength: [20, "bio should be of at least 20 words"],
-        maxlength: [300, "bio should be less than 300 words "],
+        maxlength: [3000, "bio should be less than 3000 words "],
         trim: true
     },
     profileCompleted: {
