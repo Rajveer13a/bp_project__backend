@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 import app from "./app.js";
 import connectDb from "./db/dbConnection.js";
 import Razorpay from "razorpay";
+import { createAdminUser } from "./utils/createAdmin.js";
 
 
 dotenv.config({
@@ -17,6 +18,7 @@ const port= process.env.PORT;
 
 app.listen(port,()=>{
     connectDb();
+    createAdminUser();
     console.log(`\nserver is running at port http://127.0.0.1:${port}`)
 })
 
