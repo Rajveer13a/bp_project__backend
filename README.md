@@ -162,7 +162,10 @@ BrainyPath_Backend/
    - Start the frontend:  
      ```bash  
      npm start  
-     ```  
+     ```
+5. **Admin Credentials**  
+     - Email: `kangtheconqueror@admin.brainypath`  
+     - Password: `adminpassword`       
 
 ---
 
