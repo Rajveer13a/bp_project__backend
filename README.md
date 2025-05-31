@@ -9,7 +9,7 @@
 ## 🔗 **Repository Links**
 
 ### Frontend Repository
-[BrainyPath Frontend](https://github.com/Rajveer13a/BrainyPath_Frontend)
+[BrainyPath Frontend](https://github.com/Rajveer13a/bp_project__Frontend)
 
 ## 🌈 **Key Features at a Glance**  
 
